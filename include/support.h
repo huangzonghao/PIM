@@ -17,7 +17,9 @@
 #ifndef SUPPORT_H_
 #define SUPPORT_H_
 
-/* #####   FUNCTION DEFINITIONS  -  EXPORTED FUNCTIONS   ##################### */
+
+/* #####   EXPORTED FUNCTION DECLARATIONS   ################################## */
+
 void PrintUsage ();
 
 void InterruptHandler ( int s );
@@ -37,9 +39,10 @@ bool LoadProgress ( const char * record_filename,\
 
 void PrintVerboseInfo ();
 
-/* #####   FUNCTION DEFINITIONS  -  LOCAL TO THIS SOURCE FILE   ############## */
-inline bool DoesItExist ( const char* filename );
-
-const char* ExeCMD ( const char * cmd );
 
 #endif   /* ----- #ifndef SUPPORT_H_  ----- */
+
+/* =============================================================================
+ *                         end of file support.h
+ * =============================================================================
+ */

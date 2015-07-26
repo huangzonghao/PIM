@@ -40,13 +40,13 @@ int main ( int argc, char *argv[] ) {
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, NULL);
 
-    /*start the clock*/
+    /* start the clock */
     timeval  tv1, tv2;
     gettimeofday(&tv1, NULL);
 
 
 
-    /*end the clock*/
+    /* end the clock */
     gettimeofday(&tv2, NULL);
     double program_running_time = \
                 (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + \
@@ -55,3 +55,8 @@ int main ( int argc, char *argv[] ) {
     return EXIT_SUCCESS;
 }       /* ----------  end of function main  ---------- */
 
+
+/* =============================================================================
+ *                         end of file main.cc
+ * =============================================================================
+ */

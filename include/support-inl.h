@@ -16,6 +16,8 @@
 #ifndef SUPPORT-INL_H_
 #define SUPPORT-INL_H_
 
+/* #####   EXPORTED INCLINE FUNCTION DEFINE ################################## */
+
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  DoesItExist
@@ -63,3 +65,8 @@ inline const char* ExeCMD ( const char * cmd ){
 
 
 #endif   /* ----- #ifndef SUPPORT-INL_H_  ----- */
+
+/* =============================================================================
+ *                         end of file support-inl.h
+ * =============================================================================
+ */

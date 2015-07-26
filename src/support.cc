@@ -17,16 +17,19 @@
 
 /* #####   HEADER FILE INCLUDES   ############################################ */
 #include "include/support.h"
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
 #include <fstream>
+
+#include "include/support-inl.h"
 #include "thirdparty/rapidjson/document.h"
 #include "thirdparty/rapidjson/prettywriter.h"
 #include "thirdparty/rapidjson/filereadstream.h"
 #include "thirdparty/rapidjson/filewritestream.h"
-#include "include/support-inl.h"
+
 
 /* #####   FUNCTION DEFINITIONS  -  EXPORTED FUNCTIONS   ##################### */
 
@@ -66,6 +69,19 @@ void PrintUsage (){
 }       /* -----  end of function PrintUsage  ----- */
 
 
+/*
+ * ===  FUNCTION  ==============================================================
+ *         Name:  CheckSysInfo
+ *  Description:  Checks the system information, including both hardware and
+ *                  software. The result will be saved in SystemInfo structure
+ *       @param:  <+PARAMETERS+>
+ *      @return:  <+RETURN_VALUES+>
+ * =============================================================================
+ */
+<+FUNC_TYPE+> CheckSysInfo ( <+argument list+> ){
+
+    return <+return value+>;
+}       /* -----  end of function CheckSysInfo  ----- */
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  LoadCommands
@@ -202,3 +218,25 @@ void PrintVerboseInfo (){
 }       /* -----  end of function PrintVerboseInfo  ----- */
 
 
+/*
+ * ===  FUNCTION  ==============================================================
+ *         Name:  WriteLog
+ *  Description:  write the timeline based log to the given file
+ *       @param:  <+PARAMETERS+>
+ *      @return:  <+RETURN_VALUES+>
+ * =============================================================================
+ */
+ /* :TODO:Thu Jul 23 01:31:48 2015 01:31:huangzonghao:
+  * need to use some flag to decided which position the function is at, the starting
+  * of the program or the middle or what....
+  */
+<+FUNC_TYPE+> WriteLog ( <+argument list+> ){
+
+    return <+return value+>;
+}       /* -----  end of function WriteLog  ----- */
+
+
+/* =============================================================================
+ *                         end of file support.cc
+ * =============================================================================
+ */
