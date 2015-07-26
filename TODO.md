@@ -21,3 +21,7 @@ For new features, please add to the `New Feature` part.
 
 
 ##New Features
+* The default ouput contains only the value function of all states in the last period.
+  Thus, for each policy, the output is simply an array of $$$k^m$$$ elements.
+* Compare the relative difference of each policy to the optimal policy, i.e., for any two output files 
+$$$(a_i: i=1,2...,k^m)$$$ and $$$(b_i: i=1,2...,k^m)$$$, compute $$$c_i= \frac{a_i-b_i}{a_i}\cdot 100\%$$$ for all i, and draw histogram of $$$(c_i: i=1,2...,k^m)$$$.
