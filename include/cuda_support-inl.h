@@ -6,14 +6,17 @@
  *    Description:  This file contains the inline cuda supporting functions
  *
  *        Created:  Fri Jul 24 14:27:18 2015
- *       Modified:  Fri Jul 24 14:27:18 2015
+ *       Modified:  Mon Jul 27 20:23:05 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
  *
  * =============================================================================
  */
-
+#ifndef CUDA_SUPPORT_INL_H_
+#define CUDA_SUPPORT_INL_H_
+#include <stdlib.h>
+#include <cuda.h>
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  pass_to_device
@@ -64,6 +67,7 @@ inline void read_from_device ( const size_t * h_array, const size_t * d_array,\
     return ;
 }       /* -----  end of function read_from_device  ----- */
 
+#endif   /* ----- #ifndef CUDA_SUPPORT-INL_H_  ----- */
 /* =============================================================================
  *                         end of file cuda_support-inl.h
  * =============================================================================

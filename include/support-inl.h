@@ -6,15 +6,17 @@
  *    Description:  The definition of some supporting inline functions
  *
  *        Created:  Thu Jul 23 00:40:42 2015
- *       Modified:  Thu Jul 23 00:40:42 2015
+ *       Modified:  Mon Jul 27 19:52:36 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
  *
  * =============================================================================
  */
-#ifndef SUPPORT-INL_H_
-#define SUPPORT-INL_H_
+#ifndef SUPPORT_INL_H_
+#define SUPPORT_INL_H_
+
+#include <fstream>
 
 /* #####   EXPORTED INCLINE FUNCTION DEFINE ################################## */
 
@@ -27,7 +29,7 @@
  * =============================================================================
  */
 inline bool DoesItExist ( const char* filename ){
-    ifstream f(name);
+    std::ifstream f(filename);
     if (f.good()) {
         f.close();
         return true;

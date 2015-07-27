@@ -7,7 +7,7 @@
  *                    defined in comand_queue.h
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Mon Jul 27 04:38:21 2015
+ *       Modified:  Tue Jul 28 02:30:37 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -27,44 +27,18 @@
  *------------------------------------------------------------------------------
  *       Class:  CommandQueue
  *      Method:  CommandQueue
- * Description:  constructor
- *------------------------------------------------------------------------------
- */
-
-/* :REMARKS:Mon Jul 27 03:23:04 2015:huangzonghao:
- * we cannot do anything here since we don't know the array size at construction
- * point, but do remember to free the memory at the destructor.
- */
-CommandQueue::CommandQueue () {
-}
-
-free (demand_distribution);
-demand_distribution   = NULL;
-
-}  /* -----  end of method CommandQueue::CommandQueue  (constructor)  ----- */
-
-/*
- *------------------------------------------------------------------------------
- *       Class:  CommandQueue
- *      Method:  CommandQueue
  * Description:  copy constructor
  *------------------------------------------------------------------------------
  */
 CommandQueue::CommandQueue ( const CommandQueue &other ) {
+    if (this != other){
+        h = other.h;
+        if (other.d.IsComplete()){
+            d = other.d;
+        }
+    }
 }  /* -----  end of method CommandQueue::CommandQueue  (copy constructor)  ----- */
 
-/*
- *------------------------------------------------------------------------------
- *       Class:  CommandQueue
- *      Method:  ~CommandQueue
- * Description:  destructor
- *------------------------------------------------------------------------------
- */
-CommandQueue::~CommandQueue () {
-    if (max_demand - min_demand != 0 && demand_distribution != NULL){
-        free(demand_distribution);
-    }
-}  /* -----  end of method CommandQueue::~CommandQueue  (destructor)  ----- */
 
 /*
  *------------------------------------------------------------------------------
@@ -76,9 +50,76 @@ CommandQueue::~CommandQueue () {
 CommandQueue&
 CommandQueue::operator = ( const CommandQueue &other ) {
     if ( this != &other ) {
+        h = other.h;
+        if (other.d.IsComplete()){
+            d = other.d;
+        }
     }
     return *this;
 }  /* -----  end of method CommandQueue::operator =  (assignment operator)  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  CommandQueue
+ *      Method:  get_host_params
+ * Description:  return the pointer to the HostParameters
+ *------------------------------------------------------------------------------
+ */
+<+FUNC_TYPE+> CommandQueue::get_host_params ( <+argument list+> ) {
+    <+FUNCTION+>
+    return ;
+}       /* -----  end of method CommandQueue::get_host_params  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  CommandQueue
+ *      Method:  get_device_params
+ * Description:  return th e pointer to the DeviceParameters
+ *------------------------------------------------------------------------------
+ */
+<+FUNC_TYPE+> CommandQueue::get_device_params ( <+argument list+> ) {
+    <+FUNCTION+>
+    return ;
+}       /* -----  end of method CommandQueue::get_device_params  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  CommandQueue
+ *      Method:  load_host_params
+ * Description:  load the specific value to HostParameters
+ *------------------------------------------------------------------------------
+ */
+<+FUNC_TYPE+> CommandQueue::load_host_params ( <+argument list+> ) {
+    <+FUNCTION+>
+    return ;
+}       /* -----  end of method CommandQueue::load_host_params  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  CommandQueue
+ *      Method:  update_device_params
+ * Description:  passt the params stored in the HostParameters to
+ *                 DeviceParameters
+ *------------------------------------------------------------------------------
+ */
+<+FUNC_TYPE+> CommandQueue::update_device_params ( <+argument list+> ) {
+    <+FUNCTION+>
+    return ;
+}       /* -----  end of method CommandQueue::update_device_params  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  CommandQueue
+ *      Method:  retrieve_device_params
+ * Description:  copy the params stored in the DeviceParameters back to
+ *                 HostParameters
+ *------------------------------------------------------------------------------
+ */
+<+FUNC_TYPE+> CommandQueue::retrieve_device_params ( <+argument list+> ) {
+    <+FUNCTION+>
+    return ;
+}       /* -----  end of method CommandQueue::retrieve_device_params  ----- */
+
 
 
 
@@ -131,7 +172,7 @@ HostParameters::HostParameters ( const HostParameters &other ) {
         lambda  = other.lambda;
         min_demand = other.min_demand;
         max_demand = other.max_demand;
-        
+
         if (max_demand - min_demand != 0 ) {
             demand_distribution = malloc((max_demand - min_demand) *\
                                             sizeof(float));
@@ -171,7 +212,7 @@ HostParameters::operator = ( const HostParameters &other ) {
         }
         min_demand = other.min_demand;
         max_demand = other.max_demand;
-        
+
         if (max_demand - min_demand != 0 ) {
             demand_distribution  = malloc((max_demand - min_demand) *\
                                             sizeof(float));
@@ -324,7 +365,7 @@ DeviceParameters::~DeviceParameters () {
         checkCudaErrors(cudaFree(lambda));
         checkCudaErrors(cudaFree(min_demand));
         checkCudaErrors(cudaFree(max_demand));
-        
+
         if (demand_distribution != NULL){
             checkCudaErrors(cudaFree(demand_distribution));
         }
@@ -390,7 +431,8 @@ DeviceParameters::operator = ( const HostParameters &other ) {
     checkCudaErrors(cudaMalloc(&max_demand, sizeof(size_t)));
 
     if ( other.max_demand - other.min_demand != 0 ){
-        checkCudaErrors(cudaMalloc(&demand_distribution, (other.max_demand - other.min_demand) * sizeof(float)));
+        checkCudaErrors(cudaMalloc(&demand_distribution,\
+                    (other.max_demand - other.min_demand) * sizeof(float)));
     }
     pass_to_device(&other.T,          T,          1);
     pass_to_device(&other.m,          m,          1);
