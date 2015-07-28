@@ -1,0 +1,2 @@
+Tue Jul 28 20:48:24 2015
+Need to find better way to design the class structures

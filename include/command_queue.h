@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Tue Jul 28 02:32:43 2015
+ *       Modified:  Tue Jul 28 16:50:24 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -18,134 +18,8 @@
 #define COMMAND_QUEUE_H_
 #include <stdlib.h>
 
-class HostParameters;
-class DeviceParameters;
-class CommandQueue;
-/*
- * =============================================================================
- *        Class:  HostParameters
- *  Description:  This class contains the host copy of the configuration params
- * =============================================================================
- */
-class HostParameters
-{
-  public:
- /* :TODO:Fri Jul 24 02:02:25 2015 02:02:huangzonghao:
-  * do the copy part
-  */
-    /* =========================   LIFECYCLE   =============================== */
-
-    /* constructor */
-    HostParameters ();
-
-    /* copy constructor */
-    HostParameters ( const HostParameters &other );
-    /* destructor */
-    ~HostParameters ();
-
-    /* ========================  DATA MEMBERS  =============================== */
-    /* number of periods */
-    size_t T;
-    /* total number of categories */
-    size_t m;
-    /* maximum number for each category */
-    size_t k;
-    /* maximum storage */
-    size_t maxhold;
-    /* the ordering cost of each item */
-    float c;
-    /* storing cost for each item */
-    float h;
-    /* the disposal cost of each item */
-    float theta;
-    /* the price of each item */
-    float r;
-    /* the salvage benefit for one item */
-    float s;
-    /* the discount rate */
-    float alpha ;
-    /* the arrival rate for poisson distribution */
-    float lambda;
-
-    size_t max_demand;
-    size_t min_demand;
-    float * demand_distribution;
-
-    /* =========================   OPERATORS   =============================== */
-
-    /* assignment operator */
-    HostParameters& operator = ( const HostParameters &other );
-    HostParameters& operator = ( const DeviceParameters &other );
-
-}; /* -----  end of class HostParameters  ----- */
-
-/*
- * =============================================================================
- *        Class:  DeviceParameters
- *  Description:  This class contains the pointer to the device configure params
- * =============================================================================
- */
-class DeviceParameters
-{
-  public:
-    /* =========================   LIFECYCLE   =============================== */
-
-    /* constructor */
-    DeviceParameters ();
-    DeviceParameters ( HostParameters * );
-    /* copy constructor */
-    DeviceParameters ( const DeviceParameters &other );
-    /* destructor */
-    ~DeviceParameters ();
-    /* valid the completness of the structure */
-    bool IsComplete();
-
-    /* ========================  DATA MEMBERS  =============================== */
-    /* number of periods */
-    size_t * T;
-    /* total number of categories */
-    size_t * m;
-    /* maximum number for each category */
-    size_t * k;
-    /* maximum storage */
-    size_t * maxhold;
-    /* the ordering cost of each item */
-    float * c;
-    /* storing cost for each item */
-    float * h;
-    /* the disposal cost of each item */
-    float * theta;
-    /* the price of each item */
-    float * r;
-    /* the salvage benefit for one item */
-    float * s;
-    /* the discount rate */
-    float * alpha ;
-    /* the arrival rate for poisson distribution */
-    float * lambda;
-
-    size_t * max_demand;
-    size_t * min_demand;
-    float * demand_distribution;
-    /* =========================   OPERATORS   =============================== */
-
-    /* assignment operator */
-    DeviceParameters& operator = ( const DeviceParameters &other );
-    DeviceParameters& operator = ( const HostParameters &other );
-    bool set_value( char* var, float value );
-  private:
-    /* this denotes whether the object has pointed to a device copy */
-    int is_target_set = 0;
-    /*
-     * this denotes whether the object is the owner of the device copy
-     * only the owner will free the device memory when being destructed
-     * the owner ship can only be obtained at construction or being assigned
-     * by the = operator
-     */
-    int is_owner = 0;
-
-}; /* -----  end of class DeviceParameters  ----- */
-
+#include "host_parameters.h"
+#include "device_parameters.h"
 
 /* :TODO:Mon Jul 27 03:17:32 2015:huangzonghao:
  * the parameterloading should be done by the command queue
