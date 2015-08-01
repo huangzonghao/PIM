@@ -6,7 +6,7 @@
  *    Description:  This is the header file of support.h
  *
  *        Created:  Wed Jul 22 18:38:32 2015
- *       Modified:  Mon Jul 27 19:52:09 2015
+ *       Modified:  Fri Jul 31 17:31:25 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -17,6 +17,26 @@
 #ifndef SUPPORT_H_
 #define SUPPORT_H_
 #include "command_queue.h"
+#include <vector>
+/* the supported output file formats */
+const char * file_format_options_elements[]{
+    "csv",
+    "nature",
+    "json",
+    "xml"
+};
+/* the supported policies */
+const char * policy_options_elements[]{
+    "all",
+    "tree",
+    "fluid"
+};
+
+std::vector <char*> file_format_options(file_format_options_elements,\
+        file_format_options_elements + 4);
+
+std::vector <char*> policy_options(policy_options_elements,\
+    policy_options_elements + 3);
 
 /* #####   EXPORTED FUNCTION DECLARATIONS   ################################## */
 
@@ -26,7 +46,7 @@ void InterruptHandler ( int s );
 
 bool LoadParameters ( const char* input_filename );
 
-bool LoadCommands (const int argc, const char ** argv, CommandQueue * control);
+bool LoadCommands (const int argc, const char ** argv, CommandQueue * cmd);
 
 bool WriteOutputFile ( const float * value_table,\
                        const char * output_format,\

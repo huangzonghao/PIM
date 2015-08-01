@@ -6,7 +6,7 @@
  *    Description:  The implementation of DeviceParameters
  *
  *        Created:  Tue Jul 28 14:59:58 2015
- *       Modified:  Tue Jul 28 20:37:14 2015
+ *       Modified:  Wed Jul 29 11:23:51 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -198,19 +198,19 @@ DeviceParameters::operator = ( const HostParameters &hp ) {
         checkCudaErrors(cudaMalloc(&demand_distribution,\
                     (hp.max_demand - hp.min_demand) * sizeof(float)));
     }
-    pass_to_device((size_t * )hp.get_ptr("T"),          T,           1);
-    pass_to_device((size_t * )hp.get_ptr("m"),          m,           1);
-    pass_to_device((size_t * )hp.get_ptr("k"),          k,           1);
-    pass_to_device((size_t * )hp.get_ptr("maxhold"),    maxhold,     1);
-    pass_to_device((float  * )hp.get_ptr("c"),           c,          1);
-    pass_to_device((float  * )hp.get_ptr("h"),           h,          1);
-    pass_to_device((float  * )hp.get_ptr("theta"),       theta,      1);
-    pass_to_device((float  * )hp.get_ptr("r"),           r,          1);
-    pass_to_device((float  * )hp.get_ptr("s"),           s,          1);
-    pass_to_device((float  * )hp.get_ptr("alpha"),       alpha,      1);
-    pass_to_device((float  * )hp.get_ptr("lambda"),      lambda,     1);
-    pass_to_device((size_t * )hp.get_ptr("max_demand"), maxhold,     1);
-    pass_to_device((size_t * )hp.get_ptr("min_demand"), min_demand,  1);
+    pass_to_device((size_t * )hp.get_ptr("T"),          T,          1);
+    pass_to_device((size_t * )hp.get_ptr("m"),          m,          1);
+    pass_to_device((size_t * )hp.get_ptr("k"),          k,          1);
+    pass_to_device((size_t * )hp.get_ptr("maxhold"),    maxhold,    1);
+    pass_to_device((float  * )hp.get_ptr("c"),          c,          1);
+    pass_to_device((float  * )hp.get_ptr("h"),          h,          1);
+    pass_to_device((float  * )hp.get_ptr("theta"),      theta,      1);
+    pass_to_device((float  * )hp.get_ptr("r"),          r,          1);
+    pass_to_device((float  * )hp.get_ptr("s"),          s,          1);
+    pass_to_device((float  * )hp.get_ptr("alpha"),      alpha,      1);
+    pass_to_device((float  * )hp.get_ptr("lambda"),     lambda,     1);
+    pass_to_device((size_t * )hp.get_ptr("max_demand"), maxhold,    1);
+    pass_to_device((size_t * )hp.get_ptr("min_demand"), min_demand, 1);
 
     pass_to_device(&hp.demand_distribution, demand_distribution,\
                     hp.max_demand - hp.min_demand);

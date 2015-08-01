@@ -6,7 +6,7 @@
  *    Description:  This file contains the inline cuda supporting functions
  *
  *        Created:  Fri Jul 24 14:27:18 2015
- *       Modified:  Mon Jul 27 20:23:05 2015
+ *       Modified:  Wed Jul 29 11:29:48 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -17,6 +17,8 @@
 #define CUDA_SUPPORT_INL_H_
 #include <stdlib.h>
 #include <cuda.h>
+#include "../thirdparty/nvidia/helper_cuda.h"
+#include "../thirdparty/nvidia/helper_math.h"
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  pass_to_device

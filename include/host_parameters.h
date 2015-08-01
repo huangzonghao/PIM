@@ -6,7 +6,7 @@
  *    Description:  The definition of HostParameters
  *
  *        Created:  Tue Jul 28 14:54:25 2015
- *       Modified:  Tue Jul 28 20:46:48 2015
+ *       Modified:  Sat Aug  1 13:58:21 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -26,9 +26,9 @@
 class HostParameters
 {
   public:
- /* :TODO:Fri Jul 24 02:02:25 2015 02:02:huangzonghao:
-  * do the copy part
-  */
+/* :TODO:Sat Aug  1 13:58:00 2015:huangzonghao:
+ *  hey, i think i really should use the std container in here
+ */
     /* constructor */
     HostParameters ();
     /* copy constructor */
@@ -37,12 +37,9 @@ class HostParameters
     ~HostParameters ();
 
     /* =========================   ACCESSORS   =============================== */
-    bool set_value(char*var, size_t value);
-    bool set_value(char*var, float value);
-    size_t get_int(char* var);
-    float get_float(char* var);
-    void * get_ptr(char* var);
-
+    bool set_value(const char*var, size_t value);
+    bool set_value(const char*var, float value);
+    float get_value(const char * var);
     /* =========================   MUTATORS    =============================== */
 
     /* =========================   OPERATORS   =============================== */

@@ -7,7 +7,7 @@
  *                    but no algorithm functions here
  *
  *        Created:  Wed Jul 22 14:11:43 2015
- *       Modified:  Wed Jul 22 14:11:43 2015
+ *       Modified:  Sat Aug  1 13:52:55 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -16,7 +16,7 @@
  */
 
 /* #####   HEADER FILE INCLUDES   ############################################ */
-#include "include/support.h"
+#include "../include/support.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -24,12 +24,13 @@
 #include <string.h>
 #include <fstream>
 
-#include "include/support-inl.h"
-#include "thirdparty/rapidjson/document.h"
-#include "thirdparty/rapidjson/prettywriter.h"
-#include "thirdparty/rapidjson/filereadstream.h"
-#include "thirdparty/rapidjson/filewritestream.h"
+#include "../thirdparty/rapidjson/document.h"
+#include "../thirdparty/rapidjson/prettywriter.h"
+#include "../thirdparty/rapidjson/filereadstream.h"
+#include "../thirdparty/rapidjson/filewritestream.h"
 
+#include "../include/support-inl.h"
+#include "../include/command_queue.h"
 
 /* #####   FUNCTION DEFINITIONS  -  EXPORTED FUNCTIONS   ##################### */
 
@@ -68,20 +69,6 @@ void PrintUsage (){
     return;
 }       /* -----  end of function PrintUsage  ----- */
 
-
-/*
- * ===  FUNCTION  ==============================================================
- *         Name:  CheckSysInfo
- *  Description:  Checks the system information, including both hardware and
- *                  software. The result will be saved in SystemInfo structure
- *       @param:  <+PARAMETERS+>
- *      @return:  <+RETURN_VALUES+>
- * =============================================================================
- */
-<+FUNC_TYPE+> CheckSysInfo ( <+argument list+> ){
-
-    return <+return value+>;
-}       /* -----  end of function CheckSysInfo  ----- */
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  LoadCommands
@@ -95,10 +82,63 @@ void PrintUsage (){
   * need to develope structure containing all the task configuration information
   * and this structure shall be the same as the one we use in recording
   */
-bool LoadCommands ( int argc, char ** argv, CommandQueue cmd ){
+extern char *optarg;
+bool LoadCommands ( int argc, char ** argv, CommandQueue * cmd ){
+    if (argc < 2){
+        printf("Insufficient input, checkout the usage:\n");
+        PrintUsage();
+        exit(1)
+    }
+    char command;
+    while ((command = getopt(argc, argv, "?i:o:f:p:r:s:l:vh")) > 0){
+        switch (command){
+            case "i":
+                break;
+            case "o":
+                cmd->load_commands("OUTPUT_FILE", optarg);
+                break;
+            case "f":
+                if(IsValidFileFormat(optarg)){
+                    cmd->load_commands("OUTPUT_FORMAT", optarg);
+                }
+                else {
+                    printf("Invalid output format, exit");
+                    return false;
+                }
+                break;
+            case "p":
+                if(IsValidPolicy(optarg)){
+                    cmd->load_commands("POLICY", optarg);
+                }
+                else {
+                    printf("Invalid policy, exit");
+                   return false;
+                }
+                break;
+            case "r":
+                cmd->load_commands("RECOVERY", optarg);
+                break;
+            case "s":
+                cmd->load_commands("RECORD", optarg);
+                break;
+            case "l":
+                cmd->load_commands("LOGGING", optarg);
+                break;
+            case "v":
+                cmd->load_commands("ENABLE_VERBOSE", "1");
+                break;
+            case "h":
+                cmd->load_commands("PRINT_HELP", "1");
+                break;
+        }
+    }
 
     return true;
 }       /* -----  end of function LoadCommands  ----- */
+
+
+
+
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  InterruptHandler
@@ -119,7 +159,9 @@ void InterruptHandler ( int s ){
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  LoadParameters
- *  Description:  Load the parameters from the json file and valid the input data
+ *  Description:  This function will search for the input file whose name is
+ *                  stored in the CommandQueue and load the parameters stored
+ *                  in it to the HostParameters struct
  *       @param:  input_filename: the filename of the json file
  *      @return:  the status of loading
  * =============================================================================
@@ -131,8 +173,42 @@ void InterruptHandler ( int s ){
   *           2) the file is not complete
   * then print the error msg and return false
   */
-bool LoadParameters ( const char* input_filename ){
+bool LoadParameters ( CommandQueue * cmd ){
+    FILE* fp = fopen(cmd->get_input_file_name(), "r");
+    char readBuffer[65536];
+    FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+    Document para;
+    para.ParseStream(is);
+    if (! cmd->load_host_params("T"          , para["T"].GetInt()          ) &&
+          cmd->load_host_params("m"          , para["m"].GetInt()          ) &&
+          cmd->load_host_params("k"          , para["k"].GetInt()          ) &&
+          cmd->load_host_params("maxhold"    , para["maxhold"].GetInt()    ) &&
+          cmd->load_host_params("c"          , para["c"].GetInt()          ) &&
+          cmd->load_host_params("h"          , para["h"].GetInt()          ) &&
+          cmd->load_host_params("theta"      , para["theta"].GetInt()      ) &&
+          cmd->load_host_params("r"          , para["r"].GetInt()          ) &&
+          cmd->load_host_params("s"          , para["s"].GetInt()          ) &&
+          cmd->load_host_params("alpha"      , para["alpha"].GetInt()      ) &&
+          cmd->load_host_params("lambda"     , para["lambda"].GetInt()     ) &&
+          cmd->load_host_params("max_demand" , para["max_demand"].GetInt() ) &&
+          cmd->load_host_params("min_demand" , para["min_demand"].GetInt() )
+       ){
+        printf("Error happened while loading the parameters, printing all the"
+                "loaded parameters : \n");
+        fclose(fp);
+        cmd->print_params();
+        return false;
+    }
+/* :TODO:Sat Aug  1 12:33:28 2015:huangzonghao:
+ *  how to get the host paramters
+ */
+    const Value& demand_array = para["demand_distribution"];
+    for (int i = 0; i < cmd->get_host_param_value("max_demand") -\
+            cmd->get_host_param_value("min_demand"); ++i){
+        demand_distribution[i] = demand_array[i].GetDouble();
+    }
 
+    fclose(fp);
     return true;
 }       /* -----  end of function LoadParameters  ----- */
 

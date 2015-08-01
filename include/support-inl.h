@@ -6,7 +6,7 @@
  *    Description:  The definition of some supporting inline functions
  *
  *        Created:  Thu Jul 23 00:40:42 2015
- *       Modified:  Mon Jul 27 19:52:36 2015
+ *       Modified:  Thu Jul 30 02:00:40 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -17,6 +17,7 @@
 #define SUPPORT_INL_H_
 
 #include <fstream>
+#include "support.h"
 
 /* #####   EXPORTED INCLINE FUNCTION DEFINE ################################## */
 
@@ -64,6 +65,35 @@ inline const char* ExeCMD ( const char * cmd ){
     return result.c_str();
 }       /* -----  end of function ExeCMD  ----- */
 
+/*
+ * ===  FUNCTION  ==============================================================
+ *         Name:  IsValidFileFormat
+ *  Description:  Check whether a string is the vaild output file format
+ *       @param:  char *
+ *      @return:  bool
+ * =============================================================================
+ */
+bool IsValidFileFormat(const char * var){
+    if (find(file_format_options.begin(), file_format_options.end(), var) != \
+            file_format_options.end())
+        return true;
+    else return false;
+}       /* -----  end of function IsValidFileFormat  ----- */
+
+/*
+ * ===  FUNCTION  ==============================================================
+ *         Name:  IsValidPolicy
+ *  Description:  check whether the input string is the valid policy
+ *       @param:  char *
+ *      @return:  bool
+ * =============================================================================
+ */
+bool IsValidPolicy(const char * var){
+    if (find(policy_options.begin(), policy_options.end(), var) !=\
+            policy_options.end())
+        return true;
+    else return false;
+}       /* -----  end of function IsValidPolicy  ----- */
 
 
 #endif   /* ----- #ifndef SUPPORT-INL_H_  ----- */

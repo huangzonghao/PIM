@@ -6,7 +6,7 @@
  *    Description:  This file contains the denifination of SystemInfo
  *
  *        Created:  Fri Jul 24 01:11:47 2015
- *       Modified:  Fri Jul 24 01:11:47 2015
+ *       Modified:  Wed Jul 29 12:22:02 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -41,19 +41,22 @@ class SystemInfo
     ~SystemInfo ();
 
     /* =========================   ACCESSORS   =============================== */
+    int get_value(char *);
 
     /* =========================   MUTATORS    =============================== */
 
     /* =========================   OPERATORS   =============================== */
-
-    /* assignment operator */
-    SystemInfo& operator = ( const SystemInfo &other );
+    void print_sys_info();
+    void check_gpu(); // if no gpu is there, exit from inside
 
   protected:
     /* ========================  DATA MEMBERS  =============================== */
 
   private:
     /* ========================  DATA MEMBERS  =============================== */
+    int num_cuda_devices_;
+    int num_cuda_cores_;
+    int cuda_core_size_; // number of threads per block
 
 }; /* -----  end of class SystemInfo  ----- */
 
