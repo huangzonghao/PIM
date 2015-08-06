@@ -1,2 +1,15 @@
 Tue Jul 28 20:48:24 2015
 Need to find better way to design the class structures
+
+Tue Aug 4 16:48:24 2015
+Use standard library to store the parameters so we can remove the host_param
+and device_param classes
+
+Tue Aug  4 16:35:02 2015
+Now I made up my mind, the class of host_parameters and device_parameters
+shall be inherited from the unsorted_map. Because we always need some
+self-defined methods.
+
+Fri Aug  7 00:49:49 2015
+Now stick to the individual classes for both the host parameters and device
+parameters, but had a more clever way to deal with the parameters

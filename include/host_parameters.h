@@ -6,7 +6,7 @@
  *    Description:  The definition of HostParameters
  *
  *        Created:  Tue Jul 28 14:54:25 2015
- *       Modified:  Sat Aug  1 13:58:21 2015
+ *       Modified:  Fri Aug  7 00:45:38 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -16,7 +16,11 @@
 #ifndef HOST_PARAMETERS_H_
 #define HOST_PARAMETERS_H_
 #include <stdlib.h>
-#include "device_parameters.h"
+#include <string>
+#include <vector>
+
+class DeviceParameters;
+
 /*
  * =============================================================================
  *        Class:  HostParameters
@@ -25,10 +29,13 @@
  */
 class HostParameters
 {
+  friend class DeviceParameters;
   public:
-/* :TODO:Sat Aug  1 13:58:00 2015:huangzonghao:
- *  hey, i think i really should use the std container in here
+/* :REMARKS:Wed Aug  5 22:52:35 2015:huangzonghao:
+ *  store all the parameters as float and only convert them to float
+ *  when passing them to the device
  */
+
     /* constructor */
     HostParameters ();
     /* copy constructor */
@@ -37,11 +44,18 @@ class HostParameters
     ~HostParameters ();
 
     /* =========================   ACCESSORS   =============================== */
-    bool set_value(const char*var, size_t value);
-    bool set_value(const char*var, float value);
-    float get_value(const char * var);
-    /* =========================   MUTATORS    =============================== */
+    float get_value(const std::string &var);
+    float& operator [](const std::string &var); /* this is also mutator */
+    const char* pop_param_names(int idx); /* will return NULL if out of range */
 
+    /* =========================   MUTATORS    =============================== */
+    bool set_value(const std::string &var, float value);
+    /* the special arrangement for loading the demand_distribution */
+    bool set_value(const std::string &var,
+                   int distributionIdx,
+                   int valueIdx,
+                   float value);
+    /* bool load_distributation(size_t id, float * array, size_t length); */
     /* =========================   OPERATORS   =============================== */
 
     /* assignment operator */
@@ -53,33 +67,49 @@ class HostParameters
 
   private:
     /* ========================  DATA MEMBERS  =============================== */
-    /* number of periods */
-    size_t T;
-    /* total number of categories */
-    size_t m;
-    /* maximum number for each category */
-    size_t k;
-    /* maximum storage */
-    size_t maxhold;
-    /* the ordering cost of each item */
-    float c;
-    /* storing cost for each item */
-    float h;
-    /* the disposal cost of each item */
-    float theta;
-    /* the price of each item */
-    float r;
-    /* the salvage benefit for one item */
-    float s;
-    /* the discount rate */
-    float alpha ;
-    /* the arrival rate for poisson distribution */
-    float lambda;
 
-    size_t max_demand;
-    size_t min_demand;
-    float * demand_distribution;
+   /*  Paramters Lists
+    *  Notice : all the variables are stored as float in the class, and will
+    *            converted to size_t while passing to device if necessary
+    *
+    *   No.   Variable Name       Description
+    *    0    size_t T            number of periods
+    *    1    size_t m            total number of categories
+    *    2    size_t k            maximum number for each category
+    *    3    size_t maxhold      maximum storage
+    *    4    size_t max_demand   the maximum possible demands of a day
+    *    5    size_t min_demand   the minimum possible demands of a day
+    *    6    size_t num_distri   the total number of distributions
+    *    7    float  c            the ordering cost of each item
+    *    8    float  h            storing cost for each item
+    *    9    float  theta        the disposal cost of each item
+    *   10    float  r            the price of each item
+    *   11    float  s            the salvage benefit for one item
+    *   12    float  alpha        the discount rate
+    *   13    float  lambda       the arrival rate for poisson distribution
+    *
+    */
 
+    const int num_params_ = 14;
+    const char *param_names_[14] = { "T",
+                                     "m",
+                                     "k",
+                                     "maxhold",
+                                     "max_demand",
+                                     "min_demand",
+                                     "num_distri",
+                                     "c",
+                                     "h",
+                                     "theta",
+                                     "r",
+                                     "s",
+                                     "alpha",
+                                     "lambda"};
+    float params_[14];
+    std::vector< std::vector<float> > demand_distributions;
+
+    float * get_var_ptr(const std::string &var);
+    float * get_distribution_ptr(int index);
 }; /* -----  end of class HostParameters  ----- */
 
 

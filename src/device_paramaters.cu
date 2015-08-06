@@ -6,7 +6,7 @@
  *    Description:  The implementation of DeviceParameters
  *
  *        Created:  Tue Jul 28 14:59:58 2015
- *       Modified:  Wed Jul 29 11:23:51 2015
+ *       Modified:  Thu Aug  6 16:33:27 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -15,8 +15,8 @@
  */
 #include <cuda.h>
 #include "../thirdparty/nvidia/helper_cuda.h"
-#include "host_parameters.h"
-#include "device_parameters.h"
+#include "../include/host_parameters.h"
+#include "../include/device_parameters.h"
 /*
  *------------------------------------------------------------------------------
  *       Class:  DeviceParameters
@@ -33,43 +33,34 @@
  *  so only do memalloc when necessary
  */
 DeviceParameters::DeviceParameters (const &HostParameters other) {
-    checkCudaErrors(cudaMalloc(&T, sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&m, sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&k, sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&maxhold, sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&c, sizeof(float)));
-    checkCudaErrors(cudaMalloc(&h, sizeof(float)));
-    checkCudaErrors(cudaMalloc(&theta, sizeof(float)));
-    checkCudaErrors(cudaMalloc(&r, sizeof(float)));
-    checkCudaErrors(cudaMalloc(&s, sizeof(float)));
-    checkCudaErrors(cudaMalloc(&alpha, sizeof(float)));
-    checkCudaErrors(cudaMalloc(&lambda, sizeof(float)));
-    checkCudaErrors(cudaMalloc(&min_demand, sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&max_demand, sizeof(size_t)));
-
-    if ( other.max_demand - other.min_demand != 0 ){
-        checkCudaErrors(cudaMalloc(&demand_distribution,\
-                    (other.max_demand - other.min_demand) * sizeof(float)));
+    /* allocate memory space */
+    for (int i = 0; i < num_params_; ++i){
+        checkCudaErrors(cudaMalloc(params_ + i, sizeof(float)));
     }
-    pass_to_device(&other.T,          T,          1);
-    pass_to_device(&other.m,          m,          1);
-    pass_to_device(&other.k,          k,          1);
-    pass_to_device(&other.maxhold,    maxhold,    1);
-    pass_to_device(&other.c,          c,          1);
-    pass_to_device(&other.h,          h,          1);
-    pass_to_device(&other.theta,      theta,      1);
-    pass_to_device(&other.r,          r,          1);
-    pass_to_device(&other.s,          s,          1);
-    pass_to_device(&other.alpha,      alpha,      1);
-    pass_to_device(&other.lambda,     lambda,     1);
-    pass_to_device(&other.max_demand, maxhold,    1);
-    pass_to_device(&other.min_demand, min_demand, 1);
+    if ( (int)other["max_demand"] - \
+            (int)other["min_demand"] != 0 ){
+        float * temp;
+        if (demand_distributions.size() != 0){
+            demand_distributions.clear();
+        }
+        for ( int i = 0; i < (int)other["num_distri"]; ++i) {
+            checkCudaErrors(cudaMalloc(&temp,\
+                        (other["max_demand"] - \
+                         other["min_demand"]) * sizeof(float)));
+            demand_distributions.push_back(temp);
+        }
+    }
+    /* pass the parameters to the device */
+    for (int i = 0; i < num_params_; ++i){
+        pass_to_device(other.get_var_ptr("T") + i, params_[i], 1);
+    }
+    for (int i = 0; i < demand_distributions.size(); ++i){
+        pass_to_device(other.get_distribution_ptr(i), demand_distributions[i],\
+                other["max_demand"] - other["min_demand"]);
+    }
 
-    pass_to_device(&other.demand_distribution, demand_distribution,\
-                    other.max_demand - other.min_demand);
-
-    is_target_set = 1;
-    is_owner = 1;
+    is_target_set_ = 1;
+    is_owner_ = 1;
     /* :REMARKS:Mon Jul 27 03:49:49 2015:huangzonghao:
      *  still cannot allocate the device table here
      */
@@ -84,23 +75,13 @@ DeviceParameters::DeviceParameters (const &HostParameters other) {
  */
 DeviceParameters::DeviceParameters ( const DeviceParameters &other ) {
     if ( this != &other ) {
-        T                   = other.T;
-        m                   = other.m;
-        k                   = other.k;
-        maxhold             = other.maxhold;
-        c                   = other.c;
-        h                   = other.h;
-        theta               = other.theta;
-        r                   = other.r;
-        s                   = other.s;
-        alpha               = other.alpha;
-        lambda              = other.lambda;
-        max_demand          = other.max_demand;
-        min_demand          = other.min_demand;
-        demand_distribution = other.demand_distribution;
+        for (int i = 0; i < num_params_; ++i){
+            params_[i] = other.params_[i];
+        }
+        demand_distributions = other.demand_distributions;
     }
-    is_target_set = 1;
-    is_owner = 0;
+    is_target_set_ = 1;
+    is_owner_ = 0;
 }  /* -----  end of method DeviceParameters::DeviceParameters  (copy constructor)  ----- */
 
 /*
@@ -114,26 +95,53 @@ DeviceParameters::DeviceParameters ( const DeviceParameters &other ) {
  *  think about the race thing when doing destruction!!!!
  */
 DeviceParameters::~DeviceParameters () {
-    if (is_owner && is_target_set){
-        checkCudaErrors(cudaFree(T));
-        checkCudaErrors(cudaFree(m));
-        checkCudaErrors(cudaFree(k));
-        checkCudaErrors(cudaFree(maxhold));
-        checkCudaErrors(cudaFree(c));
-        checkCudaErrors(cudaFree(h));
-        checkCudaErrors(cudaFree(theta));
-        checkCudaErrors(cudaFree(r));
-        checkCudaErrors(cudaFree(s));
-        checkCudaErrors(cudaFree(alpha));
-        checkCudaErrors(cudaFree(lambda));
-        checkCudaErrors(cudaFree(min_demand));
-        checkCudaErrors(cudaFree(max_demand));
-
-        if (demand_distribution != NULL){
-            checkCudaErrors(cudaFree(demand_distribution));
+    if ( is_owner_ && is_target_set_ ) {
+        for (int i = 0; i < num_params_; ++i){
+            checkCudaErrors(cudaFree(params_[i]));
+        }
+        for (int i = 0; demand_distributions.size(); ++i){
+            checkCudaErrors(cudaFree(demand_distributions.data()));
         }
     }
 }  /* -----  end of method DeviceParameters::~DeviceParameters  (destructor)  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  DeviceParameters
+ *      Method:  get_var_ptr
+ * Description:  return the pointer pointing to the parameters of the
+ *                 DeviceParameters. The function is for internal use only
+ *------------------------------------------------------------------------------
+ */
+float ** DeviceParameters::get_var_ptr (const std::string &var) {
+    for (int i = 0; i < num_params_; ++i){
+        if (var == param_names_[i]){
+            return params_ + i;
+        }
+    }
+    printf("Error: DeviceParameters doesn't have %s as a variable, pointer not found.");
+    return NULL;
+}       /* -----  end of method DeviceParameters::get_var_ptr  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  DeviceParameters
+ *      Method:  get_float_ptr
+ * Description:  return the float pointer pointing to the parameters stored
+ *                 in the device. The function is for internal use only
+ *------------------------------------------------------------------------------
+ */
+float * DeviceParameters::get_float_ptr (const std::string &var) {
+    if (get_var_ptr(var) == NULL){
+        /*
+         * note here either a invalid variable name or the device mem hasn't
+         *     been allocated
+         */
+        printf("Error: DeviceParameters::get_float_ptr failed, cannot get pointer.");
+        return NULL;
+    }
+    return *get_var_ptr(var);
+}       /* -----  end of method DeviceParameters::get_float_ptr  ----- */
 
 /*
  *------------------------------------------------------------------------------
@@ -145,23 +153,13 @@ DeviceParameters::~DeviceParameters () {
 DeviceParameters&
 DeviceParameters::operator = ( const DeviceParameters &other ) {
     if ( this != &other ) {
-        T                   = other.T;
-        m                   = other.m;
-        k                   = other.k;
-        maxhold             = other.maxhold;
-        c                   = other.c;
-        h                   = other.h;
-        theta               = other.theta;
-        r                   = other.r;
-        s                   = other.s;
-        alpha               = other.alpha;
-        lambda              = other.lambda;
-        max_demand          = other.max_demand;
-        min_demand          = other.min_demand;
-        demand_distribution = other.demand_distribution;
+        for (int i = 0; i < num_params_; ++i){
+            params_[i] = other.params_[i];
+        }
+        demand_distributions = other.demand_distributions;
     }
-    is_target_set = 1;
-    is_owner = 0;
+    is_target_set_ = 1;
+    is_owner_ = 0;
     return *this;
 }
 
@@ -172,50 +170,42 @@ DeviceParameters::operator = ( const DeviceParameters &other ) {
  * device equal to the host
  */
 DeviceParameters&
-DeviceParameters::operator = ( const HostParameters &hp ) {
+DeviceParameters::operator = ( const HostParameters &other ) {
     /* first check if the object is capable to hold a device copy */
-    if (is_owner){
+    if (is_owner_){
         printf( "You cannot assign to a owner of"\
                 " a device copy, use the update function\n");
         exit(EXIT_FAILURE);
     }
 
-    checkCudaErrors(cudaMalloc(&T,          sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&m,          sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&k,          sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&maxhold,    sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&c,           sizeof(float)));
-    checkCudaErrors(cudaMalloc(&h,           sizeof(float)));
-    checkCudaErrors(cudaMalloc(&theta,       sizeof(float)));
-    checkCudaErrors(cudaMalloc(&r,           sizeof(float)));
-    checkCudaErrors(cudaMalloc(&s,           sizeof(float)));
-    checkCudaErrors(cudaMalloc(&alpha,       sizeof(float)));
-    checkCudaErrors(cudaMalloc(&lambda,      sizeof(float)));
-    checkCudaErrors(cudaMalloc(&min_demand, sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&max_demand, sizeof(size_t)));
-
-    if ( hp.max_demand - hp.min_demand != 0 ){
-        checkCudaErrors(cudaMalloc(&demand_distribution,\
-                    (hp.max_demand - hp.min_demand) * sizeof(float)));
+    /* allocate memory space */
+    for (int i = 0; i < num_params_; ++i){
+        checkCudaErrors(cudaMalloc(params_ + i, sizeof(float)));
     }
-    pass_to_device((size_t * )hp.get_ptr("T"),          T,          1);
-    pass_to_device((size_t * )hp.get_ptr("m"),          m,          1);
-    pass_to_device((size_t * )hp.get_ptr("k"),          k,          1);
-    pass_to_device((size_t * )hp.get_ptr("maxhold"),    maxhold,    1);
-    pass_to_device((float  * )hp.get_ptr("c"),          c,          1);
-    pass_to_device((float  * )hp.get_ptr("h"),          h,          1);
-    pass_to_device((float  * )hp.get_ptr("theta"),      theta,      1);
-    pass_to_device((float  * )hp.get_ptr("r"),          r,          1);
-    pass_to_device((float  * )hp.get_ptr("s"),          s,          1);
-    pass_to_device((float  * )hp.get_ptr("alpha"),      alpha,      1);
-    pass_to_device((float  * )hp.get_ptr("lambda"),     lambda,     1);
-    pass_to_device((size_t * )hp.get_ptr("max_demand"), maxhold,    1);
-    pass_to_device((size_t * )hp.get_ptr("min_demand"), min_demand, 1);
+    if ( (int)other["max_demand"] - \
+            (int)other["min_demand"] != 0 ){
+        float * temp;
+        if (demand_distributions.size() != 0){
+            demand_distributions.clear();
+        }
+        for ( int i = 0; i < (int)other["num_distri"]; ++i) {
+            checkCudaErrors(cudaMalloc(&temp,\
+                        (other["max_demand"] - \
+                         other["min_demand"]) * sizeof(float)));
+            demand_distributions.push_back(temp);
+        }
+    }
+    /* pass the parameters to the device */
+    for (int i = 0; i < num_params_; ++i){
+        pass_to_device(other.get_var_ptr("T") + i, params_[i], 1);
+    }
+    for (int i = 0; i < demand_distributions.size(); ++i){
+        pass_to_device(other.get_distribution_ptr(i), demand_distributions[i],\
+                other["max_demand"] - other["min_demand"]);
+    }
 
-    pass_to_device(&hp.demand_distribution, demand_distribution,\
-                    hp.max_demand - hp.min_demand);
-    is_target_set = 1;
-    is_owner = 1;
+    is_target_set_ = 1;
+    is_owner_ = 1;
 
     return *this;
 }
@@ -232,20 +222,11 @@ DeviceParameters::operator = ( const HostParameters &hp ) {
  *------------------------------------------------------------------------------
  */
 bool DeviceParameters::is_complete () {
-    if ( is_target_set_ == 0    ||
-         T              == NULL ||
-         m              == NULL ||
-         k              == NULL ||
-         maxhold        == NULL ||
-         c              == NULL ||
-         h              == NULL ||
-         theta          == NULL ||
-         r              == NULL ||
-         s              == NULL ||
-         alpha          == NULL ||
-         lambda         == NULL)
+    for (int i = 0; i < num_params_; ++i){
+        if (params_[i] == NULL)
             return false;
-    else return true;
+    }
+    return true;
 }       /* -----  end of method DeviceParameters::is_complete  ----- */
 /*
  *------------------------------------------------------------------------------
@@ -256,9 +237,7 @@ bool DeviceParameters::is_complete () {
  *------------------------------------------------------------------------------
  */
 bool DeviceParameters::is_owner () {
-    if (is_owner_)
-        return true;
-    else return false ;
+    return is_owner_;
 }       /* -----  end of method DeviceParameters::is_owner  ----- */
 
 /*
@@ -269,9 +248,7 @@ bool DeviceParameters::is_owner () {
  *------------------------------------------------------------------------------
  */
 bool DeviceParameters::is_linked () {
-    if (is_target_set_)
-        return true;
-    else return false;
+    return is_target_set_;
 }       /* -----  end of method DeviceParameters::is_linked  ----- */
 
 
@@ -284,55 +261,8 @@ bool DeviceParameters::is_linked () {
  *                 with the host copy
  *------------------------------------------------------------------------------
  */
-bool DeviceParameters::set_value ( char * var, float value ) {
-    switch ( var ) {
-        case "c":
-            pass_to_device(&value, c, 1);
-            break;
-        case "h":
-            pass_to_device(&value, h, 1);
-            break;
-        case "theta":
-            pass_to_device(&value, theta, 1);
-            break;
-        case "r":
-            pass_to_device(&value, r, 1);
-            break;
-        case "s":
-            pass_to_device(&value, s, 1);
-            break;
-        case "alpha":
-            pass_to_device(&value, alpha, 1);
-            break;
-
-        case "lambda":
-            pass_to_device(&value, lambda, 1);
-            break;
-
-        default:
-            return false;
-            break;
-    }            /* -----  end switch  ----- */
-    return true;
-}
-bool DeviceParameters::set_value ( char * var, size_t value ) {
-    switch ( var ) {
-        case "T":
-            pass_to_device(&value, T, 1);
-            break;
-
-        case "m":
-            pass_to_device(&value, m, 1);
-            break;
-
-        case "maxhold":
-            pass_to_device(&value, maxhold, 1);
-            break;
-
-        default:
-            return false;
-            break;
-    }            /* -----  end switch  ----- */
+bool DeviceParameters::set_value ( const std::string &var, float value ) {
+    pass_to_device_(&value, get_float_ptr(var), 1);
     return true;
 }       /* -----  end of method DeviceParameters::set_value  ----- */
 

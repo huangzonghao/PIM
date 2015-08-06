@@ -6,15 +6,13 @@
  *    Description:  The implementation of HostParameters
  *
  *        Created:  Tue Jul 28 14:58:27 2015
- *       Modified:  Sat Aug  1 13:38:38 2015
+ *       Modified:  Fri Aug  7 00:45:36 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
  *
  * =============================================================================
  */
-#include <memory>
-
 #include "host_parameters.h"
 #include "device_parameters.h"
 /* =============================================================================
@@ -29,19 +27,9 @@
  *------------------------------------------------------------------------------
  */
 HostParameters::HostParameters () {
-              T =   0;
-              m =   0;
-              k =   0;
-        maxhold =   0;
-              c = 0.0;
-              h = 0.0;
-          theta = 0.0;
-              r = 0.0;
-              s = 0.0;
-          alpha = 0.0;
-         lambda = 0.0;
-     min_demand =   0;
-     max_demand =   0;
+    for (int i = 0; i < num_params_; ++i){
+        params_[i] = 0;
+    }
 }  /* -----  end of method HostParameters::HostParameters  (constructor)  ----- */
 
 /*
@@ -53,27 +41,10 @@ HostParameters::HostParameters () {
  */
 HostParameters::HostParameters ( const HostParameters &other ) {
     if (this != &other) {
-        T          = other.T;
-        m          = other.m;
-        k          = other.k;
-        maxhold    = other.maxhold;
-        c          = other.c;
-        h          = other.h;
-        theta      = other.theta;
-        r          = other.r;
-        s          = other.s;
-        alpha      = other.alpha;
-        lambda     = other.lambda;
-        min_demand = other.min_demand;
-        max_demand = other.max_demand;
-
-        if (max_demand - min_demand != 0 ) {
-            demand_distribution = malloc((max_demand - min_demand) *\
-                                            sizeof(float));
-            for (int i = 0; i < max_demand - min_demand; ++i){
-                demand_distribution[i] = other.demand_distribution[i];
-            }
+        for (int i = 0; i < num_params_; ++i){
+            params_[i] = other.params_[i];
         }
+        demand_distributions = other.demand_distributions;
 }  /* -----  end of method HostParameters::HostParameters  (copy constructor)  ----- */
 
 
@@ -87,42 +58,16 @@ HostParameters::HostParameters ( const HostParameters &other ) {
 HostParameters&
 HostParameters::operator = ( const HostParameters &other ) {
     if ( this != &other ) {
-        T       = other.T;
-        m       = other.m;
-        k       = other.k;
-        maxhold = other.maxhold;
-        c       = other.c;
-        h       = other.h;
-        theta   = other.theta;
-        r       = other.r;
-        s       = other.s;
-        alpha   = other.alpha;
-        lambda  = other.lambda;
-
-        if (demand_distribution != NULL ||
-            (other.max_demand - other.min_demand\
-             != max_demand - min_demand)){
-            free(demand_distribution);
+        for (int i = 0; i < num_params_; ++i){
+            params_[i] = other.params_[i];
         }
-        min_demand = other.min_demand;
-        max_demand = other.max_demand;
-
-        if (max_demand - min_demand != 0 ) {
-            demand_distribution  = malloc((max_demand - min_demand) *\
-                                            sizeof(float));
-            if ( demand_distribution==NULL ) {
-                fprintf(stderr, "\ndynamic memory allocation failed\n");
-                exit(EXIT_FAILURE);
-            }
-
-            for (int i = 0; i < max_demand - min_demand; ++i){
-                demand_distribution[i] = other.demand_distribution[i];
-            }
-        }
+        demand_distributions = other.demand_distributions;
     }
     return *this;
 }
-
+/* :TODO:Wed Aug  5 23:44:20 2015:huangzonghao:
+ *  bookmark
+ */
 /* reload to get the values from cuda device directly */
 HostParameters&
 HostParameters::operator = ( const DeviceParameters &device ) {
@@ -145,54 +90,74 @@ HostParameters::operator = ( const DeviceParameters &device ) {
 /*
  *------------------------------------------------------------------------------
  *       Class:  HostParameters
+ *      Method:  get_var_ptr
+ * Description:  get the pointer to the internal variable.
+ *------------------------------------------------------------------------------
+ */
+float * HostParameters::get_var_ptr (const std::string &var) {
+    for (int i = 0; i < num_params_; ++i){
+        if (var == param_names_[i]){
+            return params_ + i;
+        }
+    }
+    printf("Error: HostParameters doesn't have %s as a variable", var);
+    return NULL;
+}       /* -----  end of method HostParameters::get_var_ptr  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  HostParameters
+ *      Method:  get_distribution_ptr
+ * Description:  returns the pointer to the specific distribution
+ *------------------------------------------------------------------------------
+ */
+float * HostParameters::get_distribution_ptr (int index) {
+    if(index + 1 > demand_distributions.size()){
+        printf ("Error: the distribution index out of range !");
+    }
+    return demand_distributions[index].data();
+}       /* -----  end of method HostParameters::get_distribution_ptr  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  HostParameters
  *      Method:  set_value
  * Description:  An interface to set the value of the HostParameters
  *------------------------------------------------------------------------------
  */
-bool HostParameters::set_value ( const char * var, float value ) {
-    switch ( var ) {
-        case "T":
-            T = (size_t) value;
-            break;
-        case "m":
-            m = (size_t) value;
-            break;
-        case "maxhold":
-            maxhold = (size_t) value;
-            break;
-        case "c":
-            c = value;
-            break;
-        case "h":
-            h = value;
-            break;
-        case "theta":
-            theta = value;
-            break;
-        case "r":
-            r = value;
-            break;
-        case "s":
-            s = value;
-            break;
-        case "alpha":
-            alpha = value;
-            break;
-        case "lambda":
-            lambda = value;
-            break;
-        case "max_demand":
-            max_demand = value;
-            break;
-        case "min_demand":
-            min_demand = value;
-            break;
-        default:
-            return false;
-        break;
+bool HostParameters::set_value ( const std::string &var, float value ) {
+    if (get_var_ptr(var) == NULL){
+        printf("Error: cannot get the pointer of &s, set_value failed", var);
+        return false;
     }
-        return true;
-}       /* -----  end of method HostParameters::set_value  ----- */
+    *get_var_ptr(var) = value;
+    return true;
+}
+
+bool HostParameters::set_value(const std::string &var,
+                               int distributionIdx,
+                               int valueIdx,
+                               float value){
+    if (var != "distribution"){
+        printf("Error: the index method is only applicable to distribution\n"
+                "set_value failed.");
+        return false;
+    }
+    if (distributionIdx + 1 > demand_distributions.size()){
+        std::vector<float> temp;
+        demand_distributions.push_back(temp);
+    }
+    if (valueIdx == 0 && demand_distributions[distributionIdx].size() != 0){
+        demand_distributions[distributionIdx].clear();
+    }
+    if (valueIdx + 1 > demand_distributions[distributionIdx].size()){
+        demand_distributions[distributionIdx].push_back(value);
+    }
+    else {
+        demand_distributions[distributionIdx][valueIdx] = value;
+    }
+    return true;
+}      /* -----  end of method HostParameters::set_value  ----- */
 
 /*
  *------------------------------------------------------------------------------
@@ -202,36 +167,12 @@ bool HostParameters::set_value ( const char * var, float value ) {
  *                 and note all the values are returned in float
  *------------------------------------------------------------------------------
  */
-float HostParameters::get_value (const char * var) {
-    switch ( var ) {
-        case "T":
-            return (float)T;
-        case "m":
-            return (float)m;
-        case "maxhold":
-            return (float)maxhold;
-        case "c":
-            return c;
-        case "h":
-            return h;
-        case "theta":
-            return theta;
-        case "r":
-            return r;
-        case "s":
-            return s;
-        case "alpha":
-            return alpha;
-        case "lambda":
-            return lambda;
-        case "max_demand":
-            return (float)max_demand;
-        case "min_demand":
-            return (float)min_demand;
-        default:
-            printf("Cannot find the variable\n");
-            return 0;
+float HostParameters::get_value (const std::string &var) {
+    if (get_var_ptr(var) == NULL){
+        printf("Error: cannot get the pointer to %s, get_value failed.", var);
+        return 0;
     }
+    return *get_var_ptr(var);
 }       /* -----  end of method HostParameters::get_value  ----- */
 
 
@@ -243,27 +184,47 @@ float HostParameters::get_value (const char * var) {
  *------------------------------------------------------------------------------
  */
 void HostParameters::print_params () {
-    printf("===========================\n"\
-            "The parameters read are : \e[38;5;166m]\n"\
-            "\e[1;33mm : \e[38;5;166m%d\n"\
-            "\e[1;33mk : \e[38;5;166m%d\n"\
-            "\e[1;33mT : \e[38;5;166m%d\n"\
-            "\e[1;33mh : \e[38;5;166m%f\n"\
-            "\e[1;33mr : \e[38;5;166m%f\n"\
-            "\e[1;33mc : \e[38;5;166m%f\n"\
-            "\e[1;33mtheta : \e[38;5;166m%f\n"\
-            "\e[1;33ms : \e[38;5;166m%f\n"\
-            "\e[1;33malpha : \e[38;5;166m%f\n"\
-            "\e[1;33mlambda : \e[38;5;166m%f\n"\
-            "\e[1;33mmaxhold : \e[38;5;166m%d\n"\
-            "\e[1;33mmax_demand : \e[38;5;166m%d\n"\
-            "\e[1;33mmin_demand : \e[38;5;166m%d\n"\
-            "\e[m===========================\n",
-            m, k, T, h, r, c, theta, s, alpha, lambda, maxhold, max_demand,\
-            min_demand);
-            return ;
+    printf("===========================\n");
+    for (int i = 0; i < num_params_; ++i){
+        printf("\e[1;33m%s : \e[38;5;166m%d\n", param_names_[i], params_[i]);
+    }
+    printf("\e[m===========================\n");
+    printf("And the distributions : \n");
+    for (int i = 0; i < demand_distributions.size(); ++i){
+        printf("The No.%i distribution : \n", i);
+        for (int j = 0; j < demand_distributions[i]; ++j){
+            printf(" %d ", demand_distributions[i][j]);
+        }
+        printf("\n");
+    }
+    return ;
 }       /* -----  end of method HostParameters::print_params  ----- */
 
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  HostParameters
+ *      Method:  operator []
+ * Description:  return the value of the parameters in float
+ *                 And note this is both a accesor and a mutator
+ *------------------------------------------------------------------------------
+ */
+float& HostParameters::operator [] (const std::string &var){
+    return *get_var_ptr(var);
+}       /* -----  end of method HostParameters::operator []  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  HostParameters
+ *      Method:  pop_param_names
+ * Description:  pop up the parameters names for loading the paramters
+ *------------------------------------------------------------------------------
+ */
+const char* HostParameters::pop_param_names (int idx) {
+    if (idx < num_params_){
+        return param_names_[i];
+    }
+    else return "NULL";
+}       /* -----  end of method HostParameters::pop_param_names  ----- */
 
 /* =============================================================================
  *                         end of file host_parameters.cc

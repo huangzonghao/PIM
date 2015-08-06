@@ -6,7 +6,7 @@
  *    Description:  The definition of DeviceParameters
  *
  *        Created:  Tue Jul 28 14:56:03 2015
- *       Modified:  Tue Jul 28 17:44:33 2015
+ *       Modified:  Thu Aug  6 16:06:04 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -17,7 +17,11 @@
 #define DEVICE_PARAMETERS_H_
 
 #include <stdlib.h>
-#include "host_parameters.h"
+#include <string>
+#include <vector>
+
+class HostParameters;
+
 /*
  * =============================================================================
  *        Class:  DeviceParameters
@@ -39,10 +43,16 @@ class DeviceParameters
     /* valid the completness of the structure */
 
     /* =========================   ACCESSORS   =============================== */
+    float get_value(const std::string &var);
+    float operator [] ( const std::string &var );
+    float *  get_float_ptr(const std::string &var);
+    float ** get_var_ptr(const std::string &var);
 
+    bool is_complete();
+    bool is_owner();
+    bool is_linked();
     /* =========================   MUTATORS    =============================== */
-    bool set_value( char* var, size_t value );
-    bool set_value( char* var, float value );
+    bool set_value( const std::string &var, float value );
 
     /* =========================   OPERATORS   =============================== */
 
@@ -50,51 +60,60 @@ class DeviceParameters
     DeviceParameters& operator = ( const DeviceParameters &other );
     DeviceParameters& operator = ( const HostParameters &other );
 
-    bool is_complete();
-    bool is_owner();
-    bool is_linked();
-
   protected:
     /* ========================  DATA MEMBERS  =============================== */
 
   private:
     /* this denotes whether the object has pointed to a device copy */
-    int is_target_set_ = 0;
+    bool is_target_set_ = false;
     /*
      * this denotes whether the object is the owner of the device copy
      * only the owner will free the device memory when being destructed
      * the owner ship can only be obtained at construction or being assigned
      * by the = operator
      */
-    int is_owner_ = 0;
+    bool is_owner_ = false;
 
     /* ========================  DATA MEMBERS  =============================== */
-    /* number of periods */
-    size_t * T;
-    /* total number of categories */
-    size_t * m;
-    /* maximum number for each category */
-    size_t * k;
-    /* maximum storage */
-    size_t * maxhold;
-    /* the ordering cost of each item */
-    float * c;
-    /* storing cost for each item */
-    float * h;
-    /* the disposal cost of each item */
-    float * theta;
-    /* the price of each item */
-    float * r;
-    /* the salvage benefit for one item */
-    float * s;
-    /* the discount rate */
-    float * alpha ;
-    /* the arrival rate for poisson distribution */
-    float * lambda;
 
-    size_t * max_demand;
-    size_t * min_demand;
-    float * demand_distribution;
+   /*  Paramters Lists
+    *  Notice : all the variables are stored as float in the class, and will
+    *            converted to size_t while passing to device if necessary
+    *
+    *   No.   Variable Name        Description
+    *    0    size_t * T           number of periods
+    *    1    size_t * m           total number of categories
+    *    2    size_t * k           maximum number for each category
+    *    3    size_t * maxhold     maximum storage
+    *    4    size_t * max_demand  the maximum possible demands of a day
+    *    5    size_t * min_demand  the minimum possible demands of a day
+    *    6    size_t * num_distri  the total number of distributions
+    *    7    float  * c           the ordering cost of each item
+    *    8    float  * h           storing cost for each item
+    *    9    float  * theta       the disposal cost of each item
+    *   10    float  * r           the price of each item
+    *   11    float  * s           the salvage benefit for one item
+    *   12    float  * alpha       the discount rate
+    *   13    float  * lambda      the arrival rate for poisson distribution
+    *
+    */
+    const int num_params_ = 14;
+    const char *param_names_[14] = { "T",
+                                     "m",
+                                     "k",
+                                     "maxhold",
+                                     "max_demand",
+                                     "min_demand",
+                                     "num_distri",
+                                     "c",
+                                     "h",
+                                     "theta",
+                                     "r",
+                                     "s",
+                                     "alpha",
+                                     "lambda"};
+    float ** params_[14];
+    std::vector<float *> demand_distributions;
 
 }; /* -----  end of class DeviceParameters  ----- */
 

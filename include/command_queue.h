@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Sat Aug  1 12:43:51 2015
+ *       Modified:  Fri Aug  7 00:49:29 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -18,8 +18,9 @@
 #define COMMAND_QUEUE_H_
 #include <stdlib.h>
 #include <string>
-#include "host_parameters.h"
-#include "device_parameters.h"
+
+class HostParameters;
+class DeviceParameters;
 
 /* :TODO:Mon Jul 27 03:17:32 2015:huangzonghao:
  * the parameterloading should be done by the command queue
@@ -38,7 +39,6 @@ class CommandQueue
 
     /* constructor */
     CommandQueue ();
-    CommandQueue( const HostParameters &hp ) : h(hp){};
     /* copy constructor */
     CommandQueue ( const CommandQueue &other );
     /* destructor */
@@ -47,26 +47,21 @@ class CommandQueue
     /* =========================   ACCESSORS   =============================== */
     HostParameters * get_host_param_pointer();
     DeviceParameters * get_device_param_pointer();
-    float get_host_param_value();
+    float get_host_param_value(const std::string &var);
+    std::string get_config(const std::string &var);
 
-    bool do_printing_help();
-    bool do_verbose();
-    const char * get_input_file_name();
-    const char * get_output_file_name();
-    const char * get_output_format();
-    const char * get_policy();
-    const char * get_recovery_file_name();
-    const char * get_logging_file_name();
-    const char * get_recording_file_name();
+
+    bool check_command(const std::string &var);
+    bool check_status(const std::string &var);
 
 
     /* =========================   MUTATORS    =============================== */
-    bool load_host_params(const char * var, float value);
+    bool load_host_params(std::string var, float value);
     /*
      * FLAGS : INPUTFILE | OUTPUTFILE | OUPUTFORMAT | POLICY | RECOVERY |
      *            ENABLEVERBOSE | ENABLELOG | PRINTHELP | RECORDING
      */
-    bool load_commands( const char * var, const char * value );
+    bool load_commands( const std::string var, const std::string value );
 
     /* =========================   OPERATORS   =============================== */
     bool update_device_params();
@@ -79,20 +74,40 @@ class CommandQueue
   private:
     /* ========================  DATA MEMBERS  =============================== */
 
-    HostParameters h;
-    DeviceParameters d;
-    std::string input_file_name_  = "params.json";
-    std::string output_file_name_ = "output.txt";
-    std::string output_format_    = "csv";
-    std::string policy_           = "all";
-    std::string recovery_file_    = "";
-    std::string loggirg_file_     = "";
-    std::string recording_file_   = "";
-    bool is_verbose_enabled_      = false;
-    bool is_recovery_enabled_     = false;
-    bool is_logging_enabled_      = false;
-    bool is_recording_enabled_    = false;
-    bool print_help_              = false;
+    HostParameters * host_params_;
+    DeviceParameters * device_params_;
+
+    /* Config List
+     * No.  type    name
+     * 0    string  input_file_name
+     * 1    string  output_file_name
+     * 2    string  output_format
+     * 3    string  policy
+     * 4    string  recovery_file_name
+     * 5    string  recording_file_name
+     * 6    string  logging_file_name
+     */
+    const int num_configs_ = 7;
+    std::string configs_[7];
+    const char* config_names_[7] = {"input_file_name",
+                                    "output_file_name",
+                                    "output_format",
+                                    "policy",
+                                    "recovery_file_name",
+                                    "recording_file_name",
+                                    "logging_file_name"};
+
+    bool verbose_enabled_;
+    bool recovery_enabled_;
+    bool logging_enabled_;
+    bool recording_enabled_;
+    bool print_help_;
+
+    /* State Values */
+    bool commands_loaded_;
+    bool parameters_loaded_;
+
+    std::string * get_config_ptr(const std::string &var);
 
 }; /* -----  end of class CommandQueue  ----- */
 
