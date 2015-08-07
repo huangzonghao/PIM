@@ -6,7 +6,7 @@
  *    Description:  The definition of HostParameters
  *
  *        Created:  Tue Jul 28 14:54:25 2015
- *       Modified:  Fri Aug  7 00:45:38 2015
+ *       Modified:  Fri Aug  7 17:10:39 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -44,17 +44,19 @@ class HostParameters
     ~HostParameters ();
 
     /* =========================   ACCESSORS   =============================== */
-    float get_value(const std::string &var);
-    float& operator [](const std::string &var); /* this is also mutator */
+    float get_value(const char * var);
+    float& operator [](const char * var); /* this is also mutator */
     const char* pop_param_names(int idx); /* will return NULL if out of range */
+    const int &get_param_num(){return num_params_;};
 
     /* =========================   MUTATORS    =============================== */
-    bool set_value(const std::string &var, float value);
+    bool set_param(const char * var, float value);
+    /* to set the parameters in batch mode */
+    bool set_param(int idx, float value);
     /* the special arrangement for loading the demand_distribution */
-    bool set_value(const std::string &var,
-                   int distributionIdx,
-                   int valueIdx,
-                   float value);
+    bool set_distribution( int distributionIdx,
+                           int valueIdx,
+                           float value);
     /* bool load_distributation(size_t id, float * array, size_t length); */
     /* =========================   OPERATORS   =============================== */
 
@@ -108,7 +110,7 @@ class HostParameters
     float params_[14];
     std::vector< std::vector<float> > demand_distributions;
 
-    float * get_var_ptr(const std::string &var);
+    float * get_var_ptr(const char * var);
     float * get_distribution_ptr(int index);
 }; /* -----  end of class HostParameters  ----- */
 

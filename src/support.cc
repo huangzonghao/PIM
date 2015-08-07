@@ -7,7 +7,7 @@
  *                    but no algorithm functions here
  *
  *        Created:  Wed Jul 22 14:11:43 2015
- *       Modified:  Sat Aug  1 13:52:55 2015
+ *       Modified:  Fri Aug  7 18:43:25 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -21,13 +21,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
-#include <string.h>
 #include <fstream>
-
-#include "../thirdparty/rapidjson/document.h"
-#include "../thirdparty/rapidjson/prettywriter.h"
-#include "../thirdparty/rapidjson/filereadstream.h"
-#include "../thirdparty/rapidjson/filewritestream.h"
 
 #include "../include/support-inl.h"
 #include "../include/command_queue.h"
@@ -64,6 +58,7 @@ void PrintUsage (){
             "\t-v\n"
             "\t\tVerbose, print out all the task information\n"
             "\t-h\n"
+            "\t-?\n"
             "\t\tPrint this help manual\n"
             );
     return;
@@ -87,17 +82,17 @@ bool LoadCommands ( int argc, char ** argv, CommandQueue * cmd ){
     if (argc < 2){
         printf("Insufficient input, checkout the usage:\n");
         PrintUsage();
-        exit(1)
+        return false;
     }
     char command;
     while ((command = getopt(argc, argv, "?i:o:f:p:r:s:l:vh")) > 0){
         switch (command){
-            case "i":
+            case 'i':
                 break;
-            case "o":
+            case 'o':
                 cmd->load_commands("OUTPUT_FILE", optarg);
                 break;
-            case "f":
+            case 'f':
                 if(IsValidFileFormat(optarg)){
                     cmd->load_commands("OUTPUT_FORMAT", optarg);
                 }
@@ -106,28 +101,29 @@ bool LoadCommands ( int argc, char ** argv, CommandQueue * cmd ){
                     return false;
                 }
                 break;
-            case "p":
+            case 'p':
                 if(IsValidPolicy(optarg)){
                     cmd->load_commands("POLICY", optarg);
                 }
                 else {
                     printf("Invalid policy, exit");
-                   return false;
+                    return false;
                 }
                 break;
-            case "r":
+            case 'r':
                 cmd->load_commands("RECOVERY", optarg);
                 break;
-            case "s":
+            case 's':
                 cmd->load_commands("RECORD", optarg);
                 break;
-            case "l":
+            case 'l':
                 cmd->load_commands("LOGGING", optarg);
                 break;
-            case "v":
+            case 'v':
                 cmd->load_commands("ENABLE_VERBOSE", "1");
                 break;
-            case "h":
+            case '?':
+            case 'h':
                 cmd->load_commands("PRINT_HELP", "1");
                 break;
         }
@@ -135,8 +131,6 @@ bool LoadCommands ( int argc, char ** argv, CommandQueue * cmd ){
 
     return true;
 }       /* -----  end of function LoadCommands  ----- */
-
-
 
 
 /*
@@ -151,8 +145,10 @@ bool LoadCommands ( int argc, char ** argv, CommandQueue * cmd ){
  /* :TODO:Wed Jul 22 17:03:32 2015 17:03:huangzonghao: when exiting, first report
   * the current progress, then ask if need to store the current progress */
 void InterruptHandler ( int s ){
-
-    return ;
+    if (s == 2){
+        printf("User interrupt! Exit\n");
+        return;
+    }
 }       /* -----  end of function InterruptHandler  ----- */
 
 
@@ -174,42 +170,19 @@ void InterruptHandler ( int s ){
   * then print the error msg and return false
   */
 bool LoadParameters ( CommandQueue * cmd ){
-    FILE* fp = fopen(cmd->get_input_file_name(), "r");
-    char readBuffer[65536];
-    FileReadStream is(fp, readBuffer, sizeof(readBuffer));
-    Document para;
-    para.ParseStream(is);
-    if (! cmd->load_host_params("T"          , para["T"].GetInt()          ) &&
-          cmd->load_host_params("m"          , para["m"].GetInt()          ) &&
-          cmd->load_host_params("k"          , para["k"].GetInt()          ) &&
-          cmd->load_host_params("maxhold"    , para["maxhold"].GetInt()    ) &&
-          cmd->load_host_params("c"          , para["c"].GetInt()          ) &&
-          cmd->load_host_params("h"          , para["h"].GetInt()          ) &&
-          cmd->load_host_params("theta"      , para["theta"].GetInt()      ) &&
-          cmd->load_host_params("r"          , para["r"].GetInt()          ) &&
-          cmd->load_host_params("s"          , para["s"].GetInt()          ) &&
-          cmd->load_host_params("alpha"      , para["alpha"].GetInt()      ) &&
-          cmd->load_host_params("lambda"     , para["lambda"].GetInt()     ) &&
-          cmd->load_host_params("max_demand" , para["max_demand"].GetInt() ) &&
-          cmd->load_host_params("min_demand" , para["min_demand"].GetInt() )
-       ){
-        printf("Error happened while loading the parameters, printing all the"
-                "loaded parameters : \n");
-        fclose(fp);
-        cmd->print_params();
+    if(!DoesItExist(cmd->get_config("input_file_name"))){
+        printf("Error: Cannot find file %s", cmd->get_config("input_file_name"));
         return false;
     }
-/* :TODO:Sat Aug  1 12:33:28 2015:huangzonghao:
- *  how to get the host paramters
- */
-    const Value& demand_array = para["demand_distribution"];
-    for (int i = 0; i < cmd->get_host_param_value("max_demand") -\
-            cmd->get_host_param_value("min_demand"); ++i){
-        demand_distribution[i] = demand_array[i].GetDouble();
+    bool processing_status = false;
+    processing_status = cmd->load_host_params_from_file();
+    if (processing_status){
+        return true;
     }
-
-    fclose(fp);
-    return true;
+    else {
+        printf("Error: something went wrong while loading the parameters");
+        return false;
+    }
 }       /* -----  end of function LoadParameters  ----- */
 
 
@@ -227,8 +200,8 @@ bool LoadParameters ( CommandQueue * cmd ){
   * output file name and print the error msg
   * then generate the output file based on the indicated format and return status
   */
-bool WriteOutputFile ( const float * value_table, const char * output_format,\
-                       const char * output_filename ){
+bool WriteOutputFile ( const float * value_table, const std::string &output_format,\
+                       const std::string &output_filename ){
 
     return true;
 }       /* -----  end of function WriteOutputFile  ----- */
@@ -251,7 +224,7 @@ bool WriteOutputFile ( const float * value_table, const char * output_format,\
   */
 bool RecordProgress ( const float * current_value_table,\
                       const float * prev_value_table,\
-                      const char * record_label ){
+                      const std::string &record_label ){
 
     return true;
 }       /* -----  end of function RecordProgress  ----- */
@@ -268,7 +241,7 @@ bool RecordProgress ( const float * current_value_table,\
  /* :TODO:Wed Jul 22 17:51:56 2015 17:51:huangzonghao:
   * print the error msg if the recording file is not found and return false
   */
-bool LoadProgress ( const char * record_filename,\
+bool LoadProgress ( const std::string &record_filename,\
                     const float * current_value_table,\
                     const float * prev_value_table ){
 

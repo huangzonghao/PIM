@@ -6,7 +6,7 @@
  *    Description:  The implementation of HostParameters
  *
  *        Created:  Tue Jul 28 14:58:27 2015
- *       Modified:  Fri Aug  7 00:45:36 2015
+ *       Modified:  Fri Aug  7 17:05:44 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -94,7 +94,7 @@ HostParameters::operator = ( const DeviceParameters &device ) {
  * Description:  get the pointer to the internal variable.
  *------------------------------------------------------------------------------
  */
-float * HostParameters::get_var_ptr (const std::string &var) {
+float * HostParameters::get_var_ptr (const char * var) {
     for (int i = 0; i < num_params_; ++i){
         if (var == param_names_[i]){
             return params_ + i;
@@ -121,43 +121,56 @@ float * HostParameters::get_distribution_ptr (int index) {
 /*
  *------------------------------------------------------------------------------
  *       Class:  HostParameters
- *      Method:  set_value
+ *      Method:  set_param
  * Description:  An interface to set the value of the HostParameters
  *------------------------------------------------------------------------------
  */
-bool HostParameters::set_value ( const std::string &var, float value ) {
+bool HostParameters::set_param ( const char * var, float value ) {
     if (get_var_ptr(var) == NULL){
-        printf("Error: cannot get the pointer of &s, set_value failed", var);
+        printf("Error: cannot get the pointer of &s, set_param failed", var);
         return false;
     }
     *get_var_ptr(var) = value;
     return true;
 }
 
-bool HostParameters::set_value(const std::string &var,
-                               int distributionIdx,
-                               int valueIdx,
-                               float value){
-    if (var != "distribution"){
-        printf("Error: the index method is only applicable to distribution\n"
-                "set_value failed.");
+bool HostParameters::set_param (int idx, float value) {
+    if ( idx < params_.size() ){
+        params_[idx] = value;
+        return true;
+    }
+    else {
+        printf("Error: the index for the parameter is out of range\n"
+               "Failed to set_param by idx.\n");
         return false;
     }
-    if (distributionIdx + 1 > demand_distributions.size()){
+}   /* -----  end of method HostParameters::set_param  ----- */
+
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  HostParameters
+ *      Method:  set_distribution
+ * Description:  set the distribution data
+ *------------------------------------------------------------------------------
+ */
+bool HostParameters::set_distribution (int distriIdx, int valIdx, float val) {
+    if (distriIdx + 1 > demand_distributions.size()){
         std::vector<float> temp;
         demand_distributions.push_back(temp);
     }
-    if (valueIdx == 0 && demand_distributions[distributionIdx].size() != 0){
-        demand_distributions[distributionIdx].clear();
+    if (valIdx == 0 && demand_distributions[distriIdx].size() != 0){
+        demand_distributions[distriIdx].clear();
     }
-    if (valueIdx + 1 > demand_distributions[distributionIdx].size()){
-        demand_distributions[distributionIdx].push_back(value);
+    if (valIdx + 1 > demand_distributions[distriIdx].size()){
+        demand_distributions[distriIdx].push_back(val);
     }
     else {
-        demand_distributions[distributionIdx][valueIdx] = value;
+        demand_distributions[distriIdx][valIdx] = val;
     }
     return true;
-}      /* -----  end of method HostParameters::set_value  ----- */
+}       /* -----  end of method HostParameters::set_distribution  ----- */
+
 
 /*
  *------------------------------------------------------------------------------
@@ -167,7 +180,7 @@ bool HostParameters::set_value(const std::string &var,
  *                 and note all the values are returned in float
  *------------------------------------------------------------------------------
  */
-float HostParameters::get_value (const std::string &var) {
+float HostParameters::get_value (const char * var) {
     if (get_var_ptr(var) == NULL){
         printf("Error: cannot get the pointer to %s, get_value failed.", var);
         return 0;
@@ -208,7 +221,7 @@ void HostParameters::print_params () {
  *                 And note this is both a accesor and a mutator
  *------------------------------------------------------------------------------
  */
-float& HostParameters::operator [] (const std::string &var){
+float& HostParameters::operator [] (const char * var){
     return *get_var_ptr(var);
 }       /* -----  end of method HostParameters::operator []  ----- */
 

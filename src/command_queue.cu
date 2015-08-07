@@ -6,7 +6,7 @@
  *    Description:  This file contains the implementation of CommandQueue
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Fri Aug  7 00:49:26 2015
+ *       Modified:  Fri Aug  7 18:29:53 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -15,10 +15,17 @@
  */
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <fstream>
+
+#include "../thirdparty/rapidjson/document.h"
+#include "../thirdparty/rapidjson/prettywriter.h"
+#include "../thirdparty/rapidjson/filereadstream.h"
+#include "../thirdparty/rapidjson/filewritestream.h"
 
 #include "command_queue.h"
 #include "../include/host_parameters.h"
 #include "../include/device_parameters.h"
+
 
 /*
  *------------------------------------------------------------------------------
@@ -109,7 +116,7 @@ CommandQueue::operator = ( const CommandQueue &other ) {
  * Description:  return the pointer to the configuration strings
  *------------------------------------------------------------------------------
  */
-std::string * CommandQueue::get_config_ptr (const std::string &var) {
+std::string * CommandQueue::get_config_ptr (const char * var) {
     for (int i = 0; i < num_configs_; ++i){
         if (var == config_names_[i])
             return configs + i;
@@ -125,12 +132,12 @@ std::string * CommandQueue::get_config_ptr (const std::string &var) {
  * Description:  return the configuration attributes
  *------------------------------------------------------------------------------
  */
-std::string CommandQueue::get_config (const std::string &var) {
+const char * CommandQueue::get_config (const char * var) {
     if (get_config_ptr(var) == NULL){
         printf("Error: Cannot get the string of the %s.", var);
         return "";
     }
-    return *get_config(var);
+    return *get_config(var).c_str();
 }       /* -----  end of method CommandQueue::get_config  ----- */
 
 /*
@@ -140,7 +147,7 @@ std::string CommandQueue::get_config (const std::string &var) {
  * Description:  check whether we need to opearte certain commands
  *------------------------------------------------------------------------------
  */
-bool CommandQueue::check_command (const std::string &var) {
+bool CommandQueue::check_command (const char * var) {
     switch (var) {
         case "verbose":
             return verbose_enabled_;
@@ -161,26 +168,6 @@ bool CommandQueue::check_command (const std::string &var) {
 /*
  *------------------------------------------------------------------------------
  *       Class:  CommandQueue
- *      Method:  check_status
- * Description:  check whether the necessary components has been loaded to
- *                 the class
- *------------------------------------------------------------------------------
- */
-bool CommandQueue::check_status (const std::string &var) {
-    switch(var){
-        case "cmd":
-            return commands_loaded_;
-        case "param":
-            return parameters_loaded_;
-        default:
-            printf("Error: %s is not a valid status variable, exit", var);
-            exit();
-    }
-}       /* -----  end of method CommandQueue::check_status  ----- */
-
-/*
- *------------------------------------------------------------------------------
- *       Class:  CommandQueue
  *      Method:  get_host_param_pointer
  * Description:  return the pointer to the HostParameters
  *------------------------------------------------------------------------------
@@ -196,7 +183,7 @@ HostParameters * CommandQueue::get_host_param_pointer () {
  * Description:  return the value stored in HostParameters
  *------------------------------------------------------------------------------
  */
-float CommandQueue::get_host_param_value (const std::string &var) {
+float CommandQueue::get_host_param_value (const char * var) {
     return *host_params_[var];
 }       /* -----  end of method CommandQueue::get_host_param_value  ----- */
 
@@ -219,12 +206,54 @@ DeviceParameters * CommandQueue::get_device_param_pointer () {
  * Description:  load the specific value to HostParameters
  *------------------------------------------------------------------------------
  */
-bool CommandQueue::load_host_params ( const std::string &var, float value ) {
+bool CommandQueue::load_host_params ( const char * var, float value ) {
     if (host_params_->set_value(var,value)) {
         return true;
     }
     else return false;
 }       /* -----  end of method CommandQueue::load_host_params  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  CommandQueue
+ *      Method:  load_files
+ * Description:  load the parameters from the input file
+ *------------------------------------------------------------------------------
+ */
+bool CommandQueue::load_files (const char * type) {
+    if(type == "param"){
+        FILE* fp = std::fopen(get_config("input_file_name"), "r");
+        char readBuffer[65536];
+        rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+        rapidjson::Document para;
+        para.ParseStream(is);
+        bool process_status = false;
+        for (int i = 0; i < host_params_->get_param_num(); ++i){
+            process_status = cmd->load_host_params(host_params_->pop_param_name(i),\
+                    para[host_params_->pop_param_name(i)].GetDouble());
+            if (!process_status){
+                printf("Error: Failed to load parameter : %s, exit.",\
+                        host_params_->pop_param_name(i));
+                return false;
+            }
+        }
+        /* :TODO:Sat Aug  1 12:33:28 2015:huangzonghao:
+         *  how to get the host paramters
+         */
+        /* :TODO:Fri Aug  7 13:23:42 2015:huangzonghao:
+         *  need to implemente the mulitiple distribution load in
+         *  this is currently a temp solution
+         */
+        const rapidjson::Value& demand_array = para["demand_distribution"];
+        for (int i = 0; i < host_params_->get_value("max_demand") -\
+                host_params_->get_value("min_demand"); ++i){
+            host_params_->set_distribution(0, i, demand_array[i].GetDouble());
+        }
+
+        fclose(fp);
+        return true;
+    }
+}       /* -----  end of method CommandQueue::load_files  ----- */
 
 /*
  *------------------------------------------------------------------------------
@@ -259,7 +288,7 @@ bool CommandQueue::retrieve_device_params () {
  * Description:  set the control parameters correspondingly
  *------------------------------------------------------------------------------
  */
-bool CommandQueue::load_commands (const std::string var, const std::string value) {
+bool CommandQueue::load_commands (const char * var, const char * value) {
     switch (var) {
         case "INPUT_FILE":
             *get_config_ptr("input_file_name") = value;

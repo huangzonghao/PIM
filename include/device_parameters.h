@@ -6,7 +6,7 @@
  *    Description:  The definition of DeviceParameters
  *
  *        Created:  Tue Jul 28 14:56:03 2015
- *       Modified:  Thu Aug  6 16:06:04 2015
+ *       Modified:  Fri Aug  7 13:14:30 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -43,16 +43,16 @@ class DeviceParameters
     /* valid the completness of the structure */
 
     /* =========================   ACCESSORS   =============================== */
-    float get_value(const std::string &var);
-    float operator [] ( const std::string &var );
-    float *  get_float_ptr(const std::string &var);
-    float ** get_var_ptr(const std::string &var);
+    float get_value(const char * var);
+    float operator [] ( const char * var );
+    float *  get_float_ptr(const char * var);
+    float ** get_var_ptr(const char * var);
 
     bool is_complete();
     bool is_owner();
     bool is_linked();
     /* =========================   MUTATORS    =============================== */
-    bool set_value( const std::string &var, float value );
+    bool set_value( const char * var, float value );
 
     /* =========================   OPERATORS   =============================== */
 

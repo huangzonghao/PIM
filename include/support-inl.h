@@ -6,7 +6,7 @@
  *    Description:  The definition of some supporting inline functions
  *
  *        Created:  Thu Jul 23 00:40:42 2015
- *       Modified:  Thu Jul 30 02:00:40 2015
+ *       Modified:  Fri Aug  7 11:17:06 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -74,10 +74,11 @@ inline const char* ExeCMD ( const char * cmd ){
  * =============================================================================
  */
 bool IsValidFileFormat(const char * var){
-    if (find(file_format_options.begin(), file_format_options.end(), var) != \
-            file_format_options.end())
-        return true;
-    else return false;
+    for (int i = 0; i < num_policy_options; ++i){
+        if (var == policy_options[i])
+            return true;
+    }
+    return false;
 }       /* -----  end of function IsValidFileFormat  ----- */
 
 /*
@@ -89,10 +90,11 @@ bool IsValidFileFormat(const char * var){
  * =============================================================================
  */
 bool IsValidPolicy(const char * var){
-    if (find(policy_options.begin(), policy_options.end(), var) !=\
-            policy_options.end())
-        return true;
-    else return false;
+    for (int i = 0; i < num_file_format_options; ++i){
+        if (var == file_format_options[i])
+            return true;
+    }
+    return false;
 }       /* -----  end of function IsValidPolicy  ----- */
 
 

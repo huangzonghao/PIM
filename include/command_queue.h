@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Fri Aug  7 00:49:29 2015
+ *       Modified:  Fri Aug  7 18:35:24 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -29,7 +29,10 @@ class DeviceParameters;
  * =============================================================================
  *        Class:  CommandQueue
  *  Description:  This class contains all the configuration and control
- *                  information of the task
+ *                  information of the task.
+ *                And note this class should not be involved into the real
+ *                caltulation. It is just a database holding all the
+ *                parameters and addresses.
  * =============================================================================
  */
 class CommandQueue
@@ -47,21 +50,19 @@ class CommandQueue
     /* =========================   ACCESSORS   =============================== */
     HostParameters * get_host_param_pointer();
     DeviceParameters * get_device_param_pointer();
-    float get_host_param_value(const std::string &var);
-    std::string get_config(const std::string &var);
+    float get_host_param_value(const char * var);
+    const char * get_config(const char * var);
 
-
-    bool check_command(const std::string &var);
-    bool check_status(const std::string &var);
-
+    bool check_command(const char * var);
 
     /* =========================   MUTATORS    =============================== */
-    bool load_host_params(std::string var, float value);
+    bool load_host_params(const char * var, float value);
+    bool load_files(const char * type);
     /*
      * FLAGS : INPUTFILE | OUTPUTFILE | OUPUTFORMAT | POLICY | RECOVERY |
      *            ENABLEVERBOSE | ENABLELOG | PRINTHELP | RECORDING
      */
-    bool load_commands( const std::string var, const std::string value );
+    bool load_commands( const char * var, const char * value );
 
     /* =========================   OPERATORS   =============================== */
     bool update_device_params();
@@ -74,7 +75,7 @@ class CommandQueue
   private:
     /* ========================  DATA MEMBERS  =============================== */
 
-    HostParameters * host_params_;
+    HostParameters   * host_params_;
     DeviceParameters * device_params_;
 
     /* Config List
@@ -88,6 +89,11 @@ class CommandQueue
      * 6    string  logging_file_name
      */
     const int num_configs_ = 7;
+
+    /* :REMARKS:Fri Aug  7 13:08:20 2015:huangzonghao:
+     *  Use string here just for the simplicity to manage dynamic string length
+     *  shall prefer char array when dealing with const chars
+     */
     std::string configs_[7];
     const char* config_names_[7] = {"input_file_name",
                                     "output_file_name",
@@ -103,11 +109,7 @@ class CommandQueue
     bool recording_enabled_;
     bool print_help_;
 
-    /* State Values */
-    bool commands_loaded_;
-    bool parameters_loaded_;
-
-    std::string * get_config_ptr(const std::string &var);
+    std::string * get_config_ptr(const char * var);
 
 }; /* -----  end of class CommandQueue  ----- */
 

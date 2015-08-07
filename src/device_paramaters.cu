@@ -6,7 +6,7 @@
  *    Description:  The implementation of DeviceParameters
  *
  *        Created:  Tue Jul 28 14:59:58 2015
- *       Modified:  Thu Aug  6 16:33:27 2015
+ *       Modified:  Fri Aug  7 18:42:17 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -113,7 +113,7 @@ DeviceParameters::~DeviceParameters () {
  *                 DeviceParameters. The function is for internal use only
  *------------------------------------------------------------------------------
  */
-float ** DeviceParameters::get_var_ptr (const std::string &var) {
+float ** DeviceParameters::get_var_ptr (const char * var) {
     for (int i = 0; i < num_params_; ++i){
         if (var == param_names_[i]){
             return params_ + i;
@@ -131,7 +131,7 @@ float ** DeviceParameters::get_var_ptr (const std::string &var) {
  *                 in the device. The function is for internal use only
  *------------------------------------------------------------------------------
  */
-float * DeviceParameters::get_float_ptr (const std::string &var) {
+float * DeviceParameters::get_float_ptr (const char * var) {
     if (get_var_ptr(var) == NULL){
         /*
          * note here either a invalid variable name or the device mem hasn't
@@ -211,7 +211,17 @@ DeviceParameters::operator = ( const HostParameters &other ) {
 }
 /* -----  end of method DeviceParameters::operator =  (assignment operator)  ----- */
 
-
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  DeviceParameters
+ *      Method:  operator []
+ * Description:  return the value of the given pointer
+ *                 !!!Shall only be called within the kernel !!!
+ *------------------------------------------------------------------------------
+ */
+float DeviceParameters::operator [] (const char * var) {
+    return **get_var_ptr(var);
+}       /* -----  end of method DeviceParameters::operator []  ----- */
 
 /*
  *------------------------------------------------------------------------------
@@ -261,7 +271,7 @@ bool DeviceParameters::is_linked () {
  *                 with the host copy
  *------------------------------------------------------------------------------
  */
-bool DeviceParameters::set_value ( const std::string &var, float value ) {
+bool DeviceParameters::set_value ( const char * var, float value ) {
     pass_to_device_(&value, get_float_ptr(var), 1);
     return true;
 }       /* -----  end of method DeviceParameters::set_value  ----- */
