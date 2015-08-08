@@ -6,7 +6,7 @@
  *    Description:  The implementation of DeviceParameters
  *
  *        Created:  Tue Jul 28 14:59:58 2015
- *       Modified:  Fri Aug  7 18:42:17 2015
+ *       Modified:  Sat Aug  8 16:09:05 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -216,11 +216,10 @@ DeviceParameters::operator = ( const HostParameters &other ) {
  *       Class:  DeviceParameters
  *      Method:  operator []
  * Description:  return the value of the given pointer
- *                 !!!Shall only be called within the kernel !!!
  *------------------------------------------------------------------------------
  */
-float DeviceParameters::operator [] (const char * var) {
-    return **get_var_ptr(var);
+float * DeviceParameters::operator [] (const char * var) {
+    return *get_var_ptr(var);
 }       /* -----  end of method DeviceParameters::operator []  ----- */
 
 /*
