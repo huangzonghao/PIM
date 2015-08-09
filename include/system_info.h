@@ -6,7 +6,7 @@
  *    Description:  This file contains the denifination of SystemInfo
  *
  *        Created:  Fri Jul 24 01:11:47 2015
- *       Modified:  Wed Jul 29 12:22:02 2015
+ *       Modified:  Sun Aug  9 03:53:58 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -41,7 +41,7 @@ class SystemInfo
     ~SystemInfo ();
 
     /* =========================   ACCESSORS   =============================== */
-    int get_value(char *);
+    int get_value(const char *);
 
     /* =========================   MUTATORS    =============================== */
 

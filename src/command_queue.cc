@@ -1,31 +1,29 @@
 /*
  * =============================================================================
  *
- *       Filename:  command_queue.cu
+ *       Filename:  command_queue.cc
  *
  *    Description:  This file contains the implementation of CommandQueue
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Fri Aug  7 18:29:53 2015
+ *       Modified:  Sun Aug  9 10:22:18 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
  *
  * =============================================================================
  */
-#include <cuda.h>
-#include <cuda_runtime.h>
 #include <fstream>
 
+#include <stdlib>
 #include "../thirdparty/rapidjson/document.h"
 #include "../thirdparty/rapidjson/prettywriter.h"
 #include "../thirdparty/rapidjson/filereadstream.h"
 #include "../thirdparty/rapidjson/filewritestream.h"
 
-#include "command_queue.h"
+#include "../include/command_queue.h"
 #include "../include/host_parameters.h"
 #include "../include/device_parameters.h"
-
 
 /*
  *------------------------------------------------------------------------------
@@ -48,8 +46,6 @@ CommandQueue::CommandQueue () {
     logging_enabled_   = false;
     recording_enabled_ = false;
     print_help_        = false;
-    commands_loaded_   = false;
-    parameters_loaded_ = false;
 
     host_params_   = new HostParameters;
     device_params_ = new DeviceParameters;
@@ -63,11 +59,11 @@ CommandQueue::CommandQueue () {
  * Description:  copy constructor
  *------------------------------------------------------------------------------
  */
-CommandQueue::CommandQueue ( const CommandQueue &other ) {
+CommandQueue::CommandQueue ( CommandQueue &other ) {
     host_params_   = new HostParameters;
     device_params_ = new DeviceParameters;
-    if (this != other){
-        *host_params_ = *other.get_host_param_pointer();
+    if (this != &other){
+        *host_params_ = *(other.get_host_param_pointer());
         update_device_params();
         for (int i = 0; i < num_configs_; ++i){
             configs_[i] = other.configs_[i]
@@ -77,11 +73,26 @@ CommandQueue::CommandQueue ( const CommandQueue &other ) {
         logging_enabled_     = other.logging_enabled_;
         recording_enabled_   = other.recording_enabled_;
         print_help_          = other.print_help_;
-        commands_loaded_     = other.commands_loaded_;
-        parameters_loaded_   = other.parameters_loaded_;
     }
 }  /* -----  end of method CommandQueue::CommandQueue  (copy constructor)  ----- */
 
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  CommandQueue
+ *      Method:  ~CommandQueue
+ * Description:  destructor
+ *------------------------------------------------------------------------------
+ */
+CommandQueue::~CommandQueue () {
+    if (d_demand_distributions_ != NULL) {
+        for (int i = 0; i < (int)device_params_->num_distri; ++i){
+            cuda_FreeMemory(d_demand_distribution_[i]);
+        }
+        cuda_FreeMemory(device_params_->demand_distributions);
+        free (d_demand_distributions_);
+        device_params_->demand_distributions = NULL;
+    }
+}  /* -----  end of method CommandQueue::~CommandQueue  (destructor)  ----- */
 
 /*
  *------------------------------------------------------------------------------
@@ -91,8 +102,8 @@ CommandQueue::CommandQueue ( const CommandQueue &other ) {
  *------------------------------------------------------------------------------
  */
 CommandQueue&
-CommandQueue::operator = ( const CommandQueue &other ) {
-    if (this != other){
+CommandQueue::operator = ( CommandQueue &other ) {
+    if (this != &other){
         *host_params_ = *other.get_host_param_pointer();
         update_device_params();
         for (int i = 0; i < num_configs_; ++i){
@@ -103,8 +114,6 @@ CommandQueue::operator = ( const CommandQueue &other ) {
         logging_enabled_     = other.logging_enabled_;
         recording_enabled_   = other.recording_enabled_;
         print_help_          = other.print_help_;
-        commands_loaded_     = other.commands_loaded_;
-        parameters_loaded_   = other.parameters_loaded_;
     }
     return *this;
 }  /* -----  end of method CommandQueue::operator =  (assignment operator)  ----- */
@@ -179,13 +188,13 @@ HostParameters * CommandQueue::get_host_param_pointer () {
 /*
  *------------------------------------------------------------------------------
  *       Class:  CommandQueue
- *      Method:  get_host_param_value
+ *      Method:  get_h_param
  * Description:  return the value stored in HostParameters
  *------------------------------------------------------------------------------
  */
-float CommandQueue::get_host_param_value (const char * var) {
+float CommandQueue::get_h_param (const char * var) {
     return *host_params_[var];
-}       /* -----  end of method CommandQueue::get_host_param_value  ----- */
+}       /* -----  end of method CommandQueue::get_h_param  ----- */
 
 
 /*
@@ -264,22 +273,53 @@ bool CommandQueue::load_files (const char * type) {
  *------------------------------------------------------------------------------
  */
 bool CommandQueue::update_device_params () {
-    *device_params_ = *host_params_;
+    device_params_->T            = (size_t)*host_params_["T"];
+    device_params_->m            = (size_t)*host_params_["m"];
+    device_params_->k            = (size_t)*host_params_["k"];
+    device_params_->maxhold      = (size_t)*host_params_["maxhold"];
+    device_params_->max_demand   = (size_t)*host_params_["max_demand"];
+    device_params_->min_demand   = (size_t)*host_params_["min_demand"];
+    device_params_->num_distri   = (size_t)*host_params_["num_distri"];
+    device_params_->c            = *host_params_["c"];
+    device_params_->h            = *host_params_["h"];
+    device_params_->theta        = *host_params_["theta"];
+    device_params_->r            = *host_params_["r"];
+    device_params_->s            = *host_params_["s"];
+    device_params_->alpha        = *host_params_["alpha"];
+    device_params_->lambda       = *host_params_["lambda"];
+
+    device_params_->table_length = pow(*host_params_["k"], *host_params_["m"]);
+
+    /* now start to deal with the demand distribution */
+    if (d_demand_distributions_ == NULL) {
+        // assigning the memory to store the pointer to distributions
+        d_demand_distributions_ =\
+                        malloc(device_params_->num_distri * sizeof(float *));
+        if (d_demand_distributions_ == NULL) {
+            fprintf(stderr, "\ndynamic memory allocation failed\n");
+            exit(EXIT_FAILURE);
+        }
+        // allocate the cuda memory for the distribution
+        for (int i = 0; i < device_params_->num_distri; ++i){
+            d_demand_distributions_[i] =\
+                    cuda_AllocateMemoryFloat(device_params_->max_demand -\
+                                        device_params_->min_demand);
+        }
+    }
+    /* now pass the distribution to the device */
+    for (int i = 0; i < device_params_->num_distri; ++i){
+        cuda_PassToDevice(host_params_->get_distribution_ptr(i),\
+                          device_params_->demand_distributions[i],\
+                          device_params_->max_demand - device_params_->min_demand);
+    }
+    /* pass the holder of the distributions to device */
+    device_params_->demand_distributions = cuda_AllocateMemoryFloatPtr\
+                                            (device_params_->num_distri);
+    cuda_PassToDevice(d_demand_distributions_,\
+                      device_params_->demand_distributions,\
+                      device_params_->num_distri);
     return true;
 }       /* -----  end of method CommandQueue::update_device_params  ----- */
-
-/*
- *------------------------------------------------------------------------------
- *       Class:  CommandQueue
- *      Method:  retrieve_device_params
- * Description:  copy the params stored in the DeviceParameters back to
- *                 HostParameters
- *------------------------------------------------------------------------------
- */
-bool CommandQueue::retrieve_device_params () {
-    *host_params_ = *device_params_;
-    return true;
-}       /* -----  end of method CommandQueue::retrieve_device_params  ----- */
 
 /*
  *------------------------------------------------------------------------------
@@ -330,6 +370,6 @@ bool CommandQueue::load_commands (const char * var, const char * value) {
 
 
 /* =============================================================================
- *                         end of file command_queue.cu
+ *                         end of file command_queue.cc
  * =============================================================================
  */

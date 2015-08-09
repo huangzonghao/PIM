@@ -6,7 +6,7 @@
  *    Description:  This is the header file of support.h
  *
  *        Created:  Wed Jul 22 18:38:32 2015
- *       Modified:  Fri Aug  7 18:05:29 2015
+ *       Modified:  Sat Aug  8 00:02:19 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -26,12 +26,6 @@ const char * file_format_options[] = { "csv",
                                        "nature",
                                        "json",
                                        "xml" };
-/* the supported policies */
-const int num_policy_options = 3;
-const char * policy_options[] = { "all",
-                                  "tree",
-                                  "fluid" };
-
 /* #####   EXPORTED FUNCTION DECLARATIONS   ################################## */
 
 void PrintUsage ();

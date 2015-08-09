@@ -6,7 +6,7 @@
  *    Description:  This file contains the main workflow of the PIM project
  *
  *        Created:  Wed Jul 22 13:57:40 2015
- *       Modified:  Fri Aug  7 18:43:31 2015
+ *       Modified:  Sun Aug  9 10:39:28 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -76,7 +76,7 @@ int main ( int argc, const char ** argv ) {
         printf("Failure while loading the parameters, exit");
         return 2;
     }
-
+    control.update_device_params();
 /*-----------------------------------------------------------------------------
  *  start the main calculation
  *-----------------------------------------------------------------------------*/
@@ -93,6 +93,9 @@ int main ( int argc, const char ** argv ) {
     /* start the clock */
     timeval  tv1, tv2;
     gettimeofday(&tv1, NULL);
+/* :TODO:Sat Aug  8 12:05:19 2015:huangzonghao:
+ *  something wrong with the preset parameters
+ */
     LetsRock(&control, &sysinfo);
 
     /* end the clock */

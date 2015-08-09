@@ -6,7 +6,7 @@
  *    Description:  The definition of some supporting inline functions
  *
  *        Created:  Thu Jul 23 00:40:42 2015
- *       Modified:  Fri Aug  7 11:17:06 2015
+ *       Modified:  Sat Aug  8 00:02:48 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -16,8 +16,10 @@
 #ifndef SUPPORT_INL_H_
 #define SUPPORT_INL_H_
 
-#include <fstream>
 #include "support.h"
+
+#include <fstream>
+#include "models.h"
 
 /* #####   EXPORTED INCLINE FUNCTION DEFINE ################################## */
 

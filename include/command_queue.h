@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Fri Aug  7 18:35:24 2015
+ *       Modified:  Sun Aug  9 10:08:57 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -20,7 +20,7 @@
 #include <string>
 
 class HostParameters;
-class DeviceParameters;
+struct DeviceParameters;
 
 /* :TODO:Mon Jul 27 03:17:32 2015:huangzonghao:
  * the parameterloading should be done by the command queue
@@ -50,7 +50,7 @@ class CommandQueue
     /* =========================   ACCESSORS   =============================== */
     HostParameters * get_host_param_pointer();
     DeviceParameters * get_device_param_pointer();
-    float get_host_param_value(const char * var);
+    float get_h_param(const char * var);
     const char * get_config(const char * var);
 
     bool check_command(const char * var);
@@ -66,7 +66,6 @@ class CommandQueue
 
     /* =========================   OPERATORS   =============================== */
     bool update_device_params();
-    bool retrieve_device_params();
     /* assignment operator */
     CommandQueue& operator = ( const CommandQueue &other );
 
@@ -76,7 +75,9 @@ class CommandQueue
     /* ========================  DATA MEMBERS  =============================== */
 
     HostParameters   * host_params_;
-    DeviceParameters * device_params_;
+    /* note when passing to kernel, we shall not use pass by reference anymore */
+    struct DeviceParameters * device_params_;
+    float ** d_demand_distributions_;
 
     /* Config List
      * No.  type    name

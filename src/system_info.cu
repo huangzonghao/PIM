@@ -6,7 +6,7 @@
  *    Description:   Implementation of SystemInfo
  *
  *        Created:  Tue Jul 28 14:49:25 2015
- *       Modified:  Wed Jul 29 12:21:52 2015
+ *       Modified:  Sun Aug  9 03:54:22 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -22,7 +22,7 @@
  * Description:  return the system configuration values
  *------------------------------------------------------------------------------
  */
-int SystemInfo::get_value (char* var) {
+int SystemInfo::get_value (const char* var) {
 switch (var) {
     case "num_devs":
         return num_cuda_devices_;

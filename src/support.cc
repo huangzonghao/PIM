@@ -3,11 +3,12 @@
  *
  *       Filename:  support.cc
  *
- *    Description:  This file contains the supporting tools for the porject
- *                    but no algorithm functions here
+ *    Description:  The functions in this file are for general work flow of the
+ *                    task and have nothing to do with the specific computation
+ *                    or algorithm
  *
  *        Created:  Wed Jul 22 14:11:43 2015
- *       Modified:  Fri Aug  7 18:43:25 2015
+ *       Modified:  Sun Aug  9 01:27:14 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -175,7 +176,7 @@ bool LoadParameters ( CommandQueue * cmd ){
         return false;
     }
     bool processing_status = false;
-    processing_status = cmd->load_host_params_from_file();
+    processing_status = cmd->load_files("param");
     if (processing_status){
         return true;
     }

@@ -13,3 +13,9 @@ self-defined methods.
 Fri Aug  7 00:49:49 2015
 Now stick to the individual classes for both the host parameters and device
 parameters, but had a more clever way to deal with the parameters
+
+Fri Aug  7 18:45:23 2015
+if we don't think about the recovery and recording mode at the beginning, then
+the program is first gonna be divided by policy (models), and we will check if
+there are anything that can be shared.
+Also we need to find a way to use as little .cu files as possible.

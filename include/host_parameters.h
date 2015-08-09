@@ -6,7 +6,7 @@
  *    Description:  The definition of HostParameters
  *
  *        Created:  Tue Jul 28 14:54:25 2015
- *       Modified:  Fri Aug  7 17:10:39 2015
+ *       Modified:  Sun Aug  9 01:16:41 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-class DeviceParameters;
+struct DeviceParameters;
 
 /*
  * =============================================================================
@@ -29,7 +29,6 @@ class DeviceParameters;
  */
 class HostParameters
 {
-  friend class DeviceParameters;
   public:
 /* :REMARKS:Wed Aug  5 22:52:35 2015:huangzonghao:
  *  store all the parameters as float and only convert them to float
@@ -48,6 +47,7 @@ class HostParameters
     float& operator [](const char * var); /* this is also mutator */
     const char* pop_param_names(int idx); /* will return NULL if out of range */
     const int &get_param_num(){return num_params_;};
+    float * get_distribution_ptr(int index);
 
     /* =========================   MUTATORS    =============================== */
     bool set_param(const char * var, float value);
@@ -63,6 +63,7 @@ class HostParameters
     /* assignment operator */
     HostParameters& operator = ( const HostParameters &other );
     HostParameters& operator = ( const DeviceParameters &other );
+    void print_params();
 
   protected:
     /* ========================  DATA MEMBERS  =============================== */
@@ -111,7 +112,6 @@ class HostParameters
     std::vector< std::vector<float> > demand_distributions;
 
     float * get_var_ptr(const char * var);
-    float * get_distribution_ptr(int index);
 }; /* -----  end of class HostParameters  ----- */
 
 
