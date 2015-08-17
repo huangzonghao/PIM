@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Sun Aug  9 10:08:57 2015
+ *       Modified:  Tue Aug 11 10:10:06 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -18,6 +18,7 @@
 #define COMMAND_QUEUE_H_
 #include <stdlib.h>
 #include <string>
+#include <vector>
 
 class HostParameters;
 struct DeviceParameters;
@@ -43,7 +44,7 @@ class CommandQueue
     /* constructor */
     CommandQueue ();
     /* copy constructor */
-    CommandQueue ( const CommandQueue &other );
+    CommandQueue ( CommandQueue &other );
     /* destructor */
     ~CommandQueue ();
 
@@ -67,7 +68,7 @@ class CommandQueue
     /* =========================   OPERATORS   =============================== */
     bool update_device_params();
     /* assignment operator */
-    CommandQueue& operator = ( const CommandQueue &other );
+    CommandQueue& operator = ( CommandQueue &other );
 
     /* print out the parameters stored in HostParameters */
     void print_params();
@@ -77,7 +78,12 @@ class CommandQueue
     HostParameters   * host_params_;
     /* note when passing to kernel, we shall not use pass by reference anymore */
     struct DeviceParameters * device_params_;
-    float ** d_demand_distributions_;
+
+    /* :REMARKS:Mon Aug 10 23:17:52 2015:huangzonghao:
+     *  when in .cc file of course we are gonna use std containers to manage
+     *  the dynamic stuff.....
+     */
+    std::vector<float*> demand_table_pointers;
 
     /* Config List
      * No.  type    name

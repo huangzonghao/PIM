@@ -6,24 +6,28 @@
  *    Description:  This file contains the implementation of CommandQueue
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Sun Aug  9 10:22:18 2015
+ *       Modified:  Mon Aug 17 09:22:39 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
  *
  * =============================================================================
  */
-#include <fstream>
+#include "../include/command_queue.h"
 
-#include <stdlib>
+#include <fstream>
+#include <stdlib.h>
+#include <math.h>
+
 #include "../thirdparty/rapidjson/document.h"
 #include "../thirdparty/rapidjson/prettywriter.h"
 #include "../thirdparty/rapidjson/filereadstream.h"
 #include "../thirdparty/rapidjson/filewritestream.h"
 
-#include "../include/command_queue.h"
+#include "../include/support-inl.h"
 #include "../include/host_parameters.h"
 #include "../include/device_parameters.h"
+#include "../include/cuda_support.h"
 
 /*
  *------------------------------------------------------------------------------
@@ -66,7 +70,7 @@ CommandQueue::CommandQueue ( CommandQueue &other ) {
         *host_params_ = *(other.get_host_param_pointer());
         update_device_params();
         for (int i = 0; i < num_configs_; ++i){
-            configs_[i] = other.configs_[i]
+            configs_[i] = other.configs_[i];
         }
         verbose_enabled_     = other.verbose_enabled_;
         recovery_enabled_    = other.recovery_enabled_;
@@ -84,14 +88,24 @@ CommandQueue::CommandQueue ( CommandQueue &other ) {
  *------------------------------------------------------------------------------
  */
 CommandQueue::~CommandQueue () {
-    if (d_demand_distributions_ != NULL) {
-        for (int i = 0; i < (int)device_params_->num_distri; ++i){
-            cuda_FreeMemory(d_demand_distribution_[i]);
+    /* the dynamic memory allocations that needed to be cleaned up:
+     *     1) host_params_ and device_params_ on host memory
+     *     2) demand distirbution tables on the device memory
+     *     3) the pointer holding the distirbution tables on the device memory
+     */
+
+    /* first clean 2 */
+    if(!demand_table_pointers.size()){
+        for (int i = 0; i < (int)demand_table_pointers.size(); ++i){
+            cuda_FreeMemory(demand_table_pointers[i]);
         }
+        /* then 3 */
         cuda_FreeMemory(device_params_->demand_distributions);
-        free (d_demand_distributions_);
         device_params_->demand_distributions = NULL;
     }
+    /* finally 1 */
+    delete host_params_;
+    delete device_params_;
 }  /* -----  end of method CommandQueue::~CommandQueue  (destructor)  ----- */
 
 /*
@@ -103,11 +117,18 @@ CommandQueue::~CommandQueue () {
  */
 CommandQueue&
 CommandQueue::operator = ( CommandQueue &other ) {
+    /* components need to copy:
+     *     1) host_params_ and device_params_
+     *     2) demand_table_pointers
+     *     3) configs_
+     *     4) 5 enables
+     */
     if (this != &other){
         *host_params_ = *other.get_host_param_pointer();
         update_device_params();
+        demand_table_pointers = other.demand_table_pointers;
         for (int i = 0; i < num_configs_; ++i){
-            configs_[i] = other.configs_[i]
+            configs_[i] = other.configs_[i];
         }
         verbose_enabled_     = other.verbose_enabled_;
         recovery_enabled_    = other.recovery_enabled_;
@@ -127,10 +148,10 @@ CommandQueue::operator = ( CommandQueue &other ) {
  */
 std::string * CommandQueue::get_config_ptr (const char * var) {
     for (int i = 0; i < num_configs_; ++i){
-        if (var == config_names_[i])
-            return configs + i;
+        if (strcmp(var, config_names_[i]) == 0)
+            return configs_ + i;
     }
-    printf("Error: %s is not a config variable name, return NULL.", var);
+    printf("Error: %s is not a config variable name, return NULL.\n", var);
     return NULL;
 }       /* -----  end of method CommandQueue::get_config_ptr  ----- */
 
@@ -143,10 +164,10 @@ std::string * CommandQueue::get_config_ptr (const char * var) {
  */
 const char * CommandQueue::get_config (const char * var) {
     if (get_config_ptr(var) == NULL){
-        printf("Error: Cannot get the string of the %s.", var);
+        printf("Error: Cannot get the string of the %s.\n", var);
         return "";
     }
-    return *get_config(var).c_str();
+    return get_config_ptr(var)->c_str();
 }       /* -----  end of method CommandQueue::get_config  ----- */
 
 /*
@@ -157,21 +178,20 @@ const char * CommandQueue::get_config (const char * var) {
  *------------------------------------------------------------------------------
  */
 bool CommandQueue::check_command (const char * var) {
-    switch (var) {
-        case "verbose":
+        if( strcmp(var, "verbose") == 0)
             return verbose_enabled_;
-        case "recovery":
+        if( strcmp(var, "recovery") == 0)
             return recovery_enabled_;
-        case "log":
+        if( strcmp(var, "log") == 0)
             return logging_enabled_;
-        case "record":
+        if( strcmp(var, "record") == 0)
             return recording_enabled_;
-        case "print_help":
+        if( strcmp(var, "print_help") == 0)
             return print_help_;
-        default:
+        else{
             printf("Error: Invalide command name, check_command failed.\n");
-            exit();
-    }            /* -----  end switch  ----- */
+            exit(-1);
+        }
 }       /* -----  end of method CommandQueue::check_command  ----- */
 
 /*
@@ -193,7 +213,7 @@ HostParameters * CommandQueue::get_host_param_pointer () {
  *------------------------------------------------------------------------------
  */
 float CommandQueue::get_h_param (const char * var) {
-    return *host_params_[var];
+    return host_params_->get_value(var);
 }       /* -----  end of method CommandQueue::get_h_param  ----- */
 
 
@@ -216,7 +236,7 @@ DeviceParameters * CommandQueue::get_device_param_pointer () {
  *------------------------------------------------------------------------------
  */
 bool CommandQueue::load_host_params ( const char * var, float value ) {
-    if (host_params_->set_value(var,value)) {
+    if (host_params_->set_param(var,value)) {
         return true;
     }
     else return false;
@@ -230,25 +250,28 @@ bool CommandQueue::load_host_params ( const char * var, float value ) {
  *------------------------------------------------------------------------------
  */
 bool CommandQueue::load_files (const char * type) {
-    if(type == "param"){
-        FILE* fp = std::fopen(get_config("input_file_name"), "r");
+    if(strcmp(type, "param") == 0){
+        FILE *fp = std::fopen(get_config("input_file_name"), "r");
         char readBuffer[65536];
         rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
         rapidjson::Document para;
         para.ParseStream(is);
         bool process_status = false;
         for (int i = 0; i < host_params_->get_param_num(); ++i){
-            process_status = cmd->load_host_params(host_params_->pop_param_name(i),\
-                    para[host_params_->pop_param_name(i)].GetDouble());
+            process_status = host_params_->set_param(host_params_->pop_param_names(i),\
+                    para[host_params_->pop_param_names(i)].GetDouble());
             if (!process_status){
-                printf("Error: Failed to load parameter : %s, exit.",\
-                        host_params_->pop_param_name(i));
+                printf("Error: Failed to load parameter : %s, exit.\n",\
+                        host_params_->pop_param_names(i));
                 return false;
             }
         }
         /* :TODO:Sat Aug  1 12:33:28 2015:huangzonghao:
          *  how to get the host paramters
          */
+/*-----------------------------------------------------------------------------
+ *  bookmark!!!!!
+ *-----------------------------------------------------------------------------*/
         /* :TODO:Fri Aug  7 13:23:42 2015:huangzonghao:
          *  need to implemente the mulitiple distribution load in
          *  this is currently a temp solution
@@ -262,6 +285,8 @@ bool CommandQueue::load_files (const char * type) {
         fclose(fp);
         return true;
     }
+    printf("Error: %s is not a valid file type, exit\n", type);
+    return false;
 }       /* -----  end of method CommandQueue::load_files  ----- */
 
 /*
@@ -273,51 +298,67 @@ bool CommandQueue::load_files (const char * type) {
  *------------------------------------------------------------------------------
  */
 bool CommandQueue::update_device_params () {
-    device_params_->T            = (size_t)*host_params_["T"];
-    device_params_->m            = (size_t)*host_params_["m"];
-    device_params_->k            = (size_t)*host_params_["k"];
-    device_params_->maxhold      = (size_t)*host_params_["maxhold"];
-    device_params_->max_demand   = (size_t)*host_params_["max_demand"];
-    device_params_->min_demand   = (size_t)*host_params_["min_demand"];
-    device_params_->num_distri   = (size_t)*host_params_["num_distri"];
-    device_params_->c            = *host_params_["c"];
-    device_params_->h            = *host_params_["h"];
-    device_params_->theta        = *host_params_["theta"];
-    device_params_->r            = *host_params_["r"];
-    device_params_->s            = *host_params_["s"];
-    device_params_->alpha        = *host_params_["alpha"];
-    device_params_->lambda       = *host_params_["lambda"];
+    device_params_->T            = (size_t)host_params_->get_value("T");
+    device_params_->m            = (size_t)host_params_->get_value("m");
+    device_params_->k            = (size_t)host_params_->get_value("k");
+    device_params_->maxhold      = (size_t)host_params_->get_value("maxhold");
+    device_params_->max_demand   = (size_t)host_params_->get_value("max_demand");
+    device_params_->min_demand   = (size_t)host_params_->get_value("min_demand");
+    device_params_->num_distri   = (size_t)host_params_->get_value("num_distri");
+    device_params_->c            = host_params_->get_value("c");
+    device_params_->h            = host_params_->get_value("h");
+    device_params_->theta        = host_params_->get_value("theta");
+    device_params_->r            = host_params_->get_value("r");
+    device_params_->s            = host_params_->get_value("s");
+    device_params_->alpha        = host_params_->get_value("alpha");
+    device_params_->lambda       = host_params_->get_value("lambda");
 
-    device_params_->table_length = pow(*host_params_["k"], *host_params_["m"]);
+    device_params_->table_length = pow(host_params_->get_value("k"), host_params_->get_value("m"));
 
     /* now start to deal with the demand distribution */
-    if (d_demand_distributions_ == NULL) {
-        // assigning the memory to store the pointer to distributions
-        d_demand_distributions_ =\
-                        malloc(device_params_->num_distri * sizeof(float *));
-        if (d_demand_distributions_ == NULL) {
-            fprintf(stderr, "\ndynamic memory allocation failed\n");
-            exit(EXIT_FAILURE);
-        }
+    if (demand_table_pointers.empty()){
         // allocate the cuda memory for the distribution
-        for (int i = 0; i < device_params_->num_distri; ++i){
-            d_demand_distributions_[i] =\
-                    cuda_AllocateMemoryFloat(device_params_->max_demand -\
-                                        device_params_->min_demand);
+        for (int i = 0; i < (int)device_params_->num_distri; ++i){
+            demand_table_pointers.push_back(cuda_AllocateMemoryFloat(\
+                        device_params_->max_demand - device_params_->min_demand));
         }
     }
-    /* now pass the distribution to the device */
-    for (int i = 0; i < device_params_->num_distri; ++i){
+    else if ( demand_table_pointers.size() != device_params_->num_distri ){
+        /* adjust the number of pointers to what we want */
+        if ( demand_table_pointers.size() > device_params_->num_distri ){
+            for (int i = 0; i < (int)(demand_table_pointers.size() - device_params_->num_distri); ++i){
+                cuda_FreeMemory(demand_table_pointers.back());
+                demand_table_pointers.pop_back();
+            }
+        }
+        else {
+            for (int i = 0; i < (int)(device_params_->num_distri - demand_table_pointers.size()); ++i){
+            demand_table_pointers.push_back(cuda_AllocateMemoryFloat(\
+                        device_params_->max_demand - device_params_->min_demand));
+            }
+        }
+    }
+
+    /* now we are sure that the numnber of cantainers and the number of distribution
+     * tables are the same
+     * now pass the distribution to the device
+     *
+     * steps:
+     *     1) pass the distribution tables to the device
+     *     2) create the on device containers for the pointers
+     *     3) pass the pointers to the device
+     */
+    for (int i = 0; i < (int)device_params_->num_distri; ++i){
         cuda_PassToDevice(host_params_->get_distribution_ptr(i),\
-                          device_params_->demand_distributions[i],\
+                          demand_table_pointers[i],\
                           device_params_->max_demand - device_params_->min_demand);
     }
-    /* pass the holder of the distributions to device */
-    device_params_->demand_distributions = cuda_AllocateMemoryFloatPtr\
-                                            (device_params_->num_distri);
-    cuda_PassToDevice(d_demand_distributions_,\
-                      device_params_->demand_distributions,\
-                      device_params_->num_distri);
+    device_params_->demand_distributions =
+        cuda_AllocateMemoryFloatPtr(device_params_->num_distri);
+    for (int i = 0; i < demand_table_pointers.size(); ++i){
+        cuda_PassToDevice
+    }
+
     return true;
 }       /* -----  end of method CommandQueue::update_device_params  ----- */
 
@@ -328,43 +369,45 @@ bool CommandQueue::update_device_params () {
  * Description:  set the control parameters correspondingly
  *------------------------------------------------------------------------------
  */
-bool CommandQueue::load_commands (const char * var, const char * value) {
-    switch (var) {
-        case "INPUT_FILE":
+bool CommandQueue::load_commands (const char *var, const char *value) {
+        if( strcmp(var, "INPUT_FILE") == 0 )
             *get_config_ptr("input_file_name") = value;
-            break;
-        case "OUPUT_FILE":
+        if( strcmp(var, "OUPUT_FILE") == 0 )
             *get_config_ptr("output_file_name") = value;
-            break;
-        case "OUPUT_FORMAT":
+        if( strcmp(var, "OUPUT_FORMAT") == 0 ){
+            if (!IsValidFileFormat(value)){
+                printf("Error: Invalid file format, exit\n");
+                return false;
+            }
             *get_config_ptr("output_file_format") = value;
-            break;
-        case "POLICY":
+        }
+        if( strcmp(var, "POLICY") == 0 ){
+            if (!IsValidPolicy(value)){
+                printf("Error: Invalid policy, exit\n");
+                return false;
+            }
             *get_config_ptr("policy") = value;
-            break;
-        case "RECOVERY":
+        }
+        if( strcmp(var, "RECOVERY") == 0 ){
             *get_config_ptr("recovery_file_name") = value;
             recovery_enabled_ = true;
-            break;
-        case "RECORDING":
+        }
+        if( strcmp(var, "RECORDING") == 0 ){
             *get_config_ptr("recording_file_name") = value;
             recording_enabled_ = true;
-            break;
-        case "ENABLE_VERBOSE":
+        }
+        if( strcmp(var, "ENABLE_VERBOSE") == 0 )
             verbose_enabled_ = true;
-            break;
-        case "LOGGING":
+        if( strcmp(var, "LOGGING") == 0 ){
             *get_config_ptr("logging_file_name") = value;
             logging_enabled_ = true;
-            break;
-        case "PRINT_HELP":
+        }
+        if( strcmp(var, "PRINT_HELP") == 0 )
             print_help_ = true;
-            break;
-        default:
-            printf("%s is not a valid attribute of CommandQueue, exit", var);
+        else {
+            printf("%s is not a valid attribute of CommandQueue, exit.\n", var);
             return false;
-            break;
-    }            /* -----  end switch  ----- */
+        }
     return true;
 }       /* -----  end of method CommandQueue::load_commands  ----- */
 

@@ -1,21 +1,21 @@
 /*
  * =============================================================================
  *
- *       Filename:  model_support-inl.h
+ *       Filename:  model_support-inl.cuh
  *
  *    Description:  The inline cuda supporting functions related to the
  *                    algorithm
  *
  *        Created:  Sat Aug  8 15:28:06 2015
- *       Modified:  Sun Aug  9 04:18:30 2015
+ *       Modified:  Sun Aug  9 16:22:24 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
  *
  * =============================================================================
  */
-#ifndef MODEL_SUPPORT_INL_H_
-#define MODEL_SUPPORT_INL_H_
+#ifndef MODEL_SUPPORT_INL_CUH_
+#define MODEL_SUPPORT_INL_CUH_
 #include <cuda.h>
 #include <cuda_runtime.h>
 
@@ -54,6 +54,6 @@ size_t d_check_storage(size_t oneDIdx, size_t m, size_t k){
 }
 #endif   /* ----- #ifndef MODEL_SUPPORT-INL_H_  ----- */
 /* =============================================================================
- *                         end of file model_support-inl.h
+ *                         end of file model_support-inl.cuh
  * =============================================================================
  */

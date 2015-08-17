@@ -6,7 +6,7 @@
  *    Description:  The definition of the frame function for the PIM problem
  *
  *        Created:  Thu Jul 23 01:09:07 2015
- *       Modified:  Sun Aug  9 10:42:58 2015
+ *       Modified:  Mon Aug 10 23:17:03 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -21,10 +21,14 @@
  */
 
 #include "../include/frame.h"
+
 #include <cstring>
+
 #include "../include/command_queue.h"
 #include "../include/system_info.h"
 #include "../include/models.h"
+#include "../include/model_support.h"
+#include "../include/device_parameters.h"
 
 /*
  * ===  FUNCTION  ==============================================================
@@ -36,14 +40,27 @@
  * =============================================================================
  */
 bool LetsRock ( CommandQueue * cmd, SystemInfo * sysinfo ){
+    /* first do some command initialization such as declare two value tables */
+    float **value_tables =\
+        DeclareValueTable(cmd->get_device_param_pointer()->table_length, sysinfo);
+
+
+    /* check if there are some tasks to recover */
+
+/*-----------------------------------------------------------------------------
+ *  the fluid policy
+ *-----------------------------------------------------------------------------*/
     if( strcmp(cmd->get_config("policy"), "fluid") == 0 ||
         strcmp(cmd->get_config("policy"),  "all") == 0 ){
-        ModelFluidInit(cmd, sysinfo);
+        ModelFluidInit(cmd, sysinfo, value_tables);
         for ( int i_period = cmd->get_h_param("T"); i_period > 0; --i_period ){
             ModelFluid(cmd, sysinfo, i_period);
         }
     }
-    else if( strcmp(cmd->get_config("policy"), "DP") == 0 ||
+/*-----------------------------------------------------------------------------
+ *  the dp policy
+ *-----------------------------------------------------------------------------*/
+    if( strcmp(cmd->get_config("policy"), "DP") == 0 ||
         strcmp(cmd->get_config("policy"),  "all") == 0 ){
         ModelDPInit(cmd, sysinfo);
         for ( int i_period = cmd->get_h_param("T"); i_period > 0; --i_period ){

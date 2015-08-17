@@ -6,7 +6,7 @@
  *    Description:  The cuda supporting functions related to the algorithm
  *
  *        Created:  Sat Aug  8 15:35:08 2015
- *       Modified:  Sun Aug  9 10:25:06 2015
+ *       Modified:  Mon Aug 10 18:59:10 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -20,6 +20,8 @@
 #include <cuda_runtime.h>
 #include "../thirdparty/nvidia/helper_cuda.h"
 #include "../thirdparty/nvidia/helper_math.h"
+
+#include "../include/cuda_support.cuh"
 
 /* =============================================================================
  *  The device kernels
@@ -120,6 +122,47 @@ float d_StateValue(float * last_table,
  *  The host functions
  * =========================================================================== */
 
+/*
+ * ===  FUNCTION  ==============================================================
+ *         Name:  DeclareValueTable
+ *  Description:  declare the two value tables in the cuda device
+ *       @param:  table length
+ *      @return:  float**
+ * =============================================================================
+ */
+float** DeclareValueTable(size_t table_length, SystemInfo* sysinfo){
+    /* first declare the host space for the two pointers holding the two tables */
+    float **temp = new float*[2];
+    /* then the device memory space */
+    for (int i = 0; i < 2; ++i){
+        checkCudaErrors(cudaMalloc(temp + i), length * sizeof(float));
+        /* then zeroize the table */
+        g_ZeroizeMemoryFloat
+            <<<sysinfo->get_value["num_cores"], sysinfo->get_value["core_size"]>>>
+            (temp[i], table_length);
+    }
+    return temp;
+}       /* -----  end of function DeclareValueTable  ----- */
+
+/*
+ * ===  FUNCTION  ==============================================================
+ *         Name:  CleanUpValueTable
+ *  Description:  clean up the memory space declared in DeclareValueTable
+ *                  both host memory and the device memory
+ *       @param:  float** and table length
+ *      @return:  success or not
+ * =============================================================================
+ */
+bool CleanUpValueTable(float ** &value_tables, size_t table_length){
+    /* first the device memory space */
+    for (int i = 0; i < 2 ++i){
+        checkCudaErrors(cudaFree(value_tables[i]));
+    }
+    /* then the host memory */
+    delete value_tables;
+    value_tables = NULL;
+    return true;
+}       /* -----  end of function CleanUpValueTable  ----- */
 
 
 /* =============================================================================

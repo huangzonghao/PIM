@@ -6,7 +6,7 @@
  *    Description:  The definition of DeviceParameters
  *
  *        Created:  Tue Jul 28 14:56:03 2015
- *       Modified:  Sun Aug  9 03:49:32 2015
+ *       Modified:  Mon Aug 10 23:12:34 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -35,6 +35,9 @@ struct DeviceParameters{
     float  alpha;
     float  lambda;
 
+    /* note this is not the value table, so of course this variable shall be able
+     * to be dereferenced in the kernel!!!!
+     */
     float ** demand_distributions;
 };
 #endif   /* ----- #ifndef DEVICE_PARAMETERS_H_  ----- */

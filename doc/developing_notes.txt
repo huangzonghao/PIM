@@ -19,3 +19,7 @@ if we don't think about the recovery and recording mode at the beginning, then
 the program is first gonna be divided by policy (models), and we will check if
 there are anything that can be shared.
 Also we need to find a way to use as little .cu files as possible.
+
+Tue Aug 11 03:56:18 2015
+There is no way to do forward declaration of std containers
+

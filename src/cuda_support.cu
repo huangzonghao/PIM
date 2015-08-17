@@ -9,7 +9,7 @@
  *                    Mostly the interface for other cpp source file
  *
  *        Created:  Thu Jul 23 03:38:40 2015
- *       Modified:  Sun Aug  9 10:18:39 2015
+ *       Modified:  Tue Aug 11 00:08:02 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -26,11 +26,39 @@
 
 #include "../include/cuda_support-inl.h"
 
-/* :TODO:Wed Jul 29 11:25:24 2015:huangzonghao:
- *  a function to report the system configuration,
- *
- */
 
+/* =============================================================================
+ *  The device kernels
+ * =========================================================================== */
+
+
+
+/* =============================================================================
+ *  The global kernels
+ * =========================================================================== */
+
+
+/*
+ * ===  GLOBAL KERNEL  =========================================================
+ *         Name:  g_ZeroizeMemoryFloat
+ *  Description:  zeroize the float array
+ *       @param:  pointer to the array, length
+ * =============================================================================
+ */
+__global__
+void g_ZeroizeMemoryFloat(float *array, size_t length){
+    size_t step_size = gridDim.x * blockDim.x;
+    size_t myStartIdx = blockDim.x * blockIdx.x + threadIdx.x;
+    for (size_t i = myStartIdx; i < arrayLength; i += step_size)
+        array[i] = 0;
+
+    __syncthreads();
+    return;
+}       /* -----  end of global kernel g_ZeroizeMemoryFloat  ----- */
+
+/* =============================================================================
+ *  The host functions
+ * =========================================================================== */
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  cuda_PassToDevice
@@ -100,17 +128,31 @@ void cuda_ReadFromDevice ( const size_t * h_array, const size_t * d_array,\
  *      @return:  float*
  * =============================================================================
  */
-float * cuda_AllocateMemoryFLoat(int length){
-    float * temp;
+float* cuda_AllocateMemoryFloat(size_t length){
+    float *temp;
     checkCudaErrors(cudaMalloc(&temp, length * sizeof(float)));
     return temp;
 }       /* -----  end of function cuda_AllocateMemoryFLoat  ----- */
 
-float ** cuda_AllocateMemoryFloatPtr(int length){
-    float ** temp;
+float ** cuda_AllocateMemoryFloatPtr(size_t length){
+    float **temp;
     checkCudaErrors(cudaMalloc(&temp, length * sizeof(float*)));
     return temp;
 }
+
+/*
+ * ===  FUNCTION  ==============================================================
+ *         Name:  cuda_ZeroizeMemoryFloat
+ *  Description:  zeroize the float array
+ *       @param:  pointer to array, array length
+ *      @return:  success or not
+ * =============================================================================
+ */
+bool cuda_ZeroizeMemoryFloat(float *array, size_t length){
+    <+body+>
+        return <+return value+>;
+}       /* -----  end of function cuda_ZeroizeMemoryFloat  ----- */
+
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  cuda_FreeMemory
@@ -119,10 +161,34 @@ float ** cuda_AllocateMemoryFloatPtr(int length){
  *      @return:  none
  * =============================================================================
  */
-void cuda_FreeMemory(float * ptr){
+void cuda_FreeMemory(float *ptr){
+    checkCudaErrors(cudaFree(ptr));
+    return;
+}
+
+void cuda_FreeMemory(float **ptr){
     checkCudaErrors(cudaFree(ptr));
     return;
 }       /* -----  end of function cuda_FreeMemory  ----- */
+
+/*
+ * ===  FUNCTION  ==============================================================
+ *         Name:  cuda_CheckGPU
+ *  Description:  returns the number of devices, number of blocks per device,
+ *                  and number of threads per block
+ *       @param:  the pointer to the three parameters
+ *      @return:  none
+ * =============================================================================
+ */
+bool cuda_CheckGPU(int *num_devices, int *num_cores, int *core_size){
+    cudaGetDeviceCount(*num_devices);
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, 0);
+    *num_cores = _ConvertSMVer2Cores(deviceProp.major, deviceProp.minor) *\
+                                      deviceProp.multiProcessorCount;
+    *core_size = deviceProp.maxThreadsPerBlock;
+    return true;
+}       /* -----  end of function cuda_CheckGPU  ----- */
 
 /* =============================================================================
  *                         end of file cuda_support.cu

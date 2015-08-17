@@ -280,9 +280,9 @@ void PrintVerboseInfo (){
   * need to use some flag to decided which position the function is at, the starting
   * of the program or the middle or what....
   */
-<+FUNC_TYPE+> WriteLog ( <+argument list+> ){
-
-    return <+return value+>;
+bool WriteLog ( CommandQueue &cmd ){
+    cmd->print_log();
+    return true;
 }       /* -----  end of function WriteLog  ----- */
 
 

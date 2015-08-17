@@ -6,7 +6,7 @@
  *    Description:  All the functions to compute the fluid policy
  *
  *        Created:  Fri Aug  7 23:34:03 2015
- *       Modified:  Sun Aug  9 10:39:15 2015
+ *       Modified:  Mon Aug 10 18:39:57 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -19,6 +19,8 @@
 #include <cuda_runtime.h>
 #include "../thirdparty/nvidia/helper_cuda.h"
 
+#include "../include/model_support.cuh"
+
 /*
  * ===  GLOBAL KERNEL  =========================================================
  *         Name:  g_ModelFluidInit
@@ -28,7 +30,7 @@
  * =============================================================================
  */
 __global__
-void g_ModelFluidInit(struct DeviceParameters d, float * value_table){
+void g_ModelFluidInit(struct DeviceParameters d, float *value_table){
     // the total number of threads which have been assigned for this task,
     // oneD layout everywhere
     size_t step_size = gridDim.x * blockDim.x;
@@ -40,6 +42,7 @@ void g_ModelFluidInit(struct DeviceParameters d, float * value_table){
     __syncthreads();
     return;
 }       /* -----  end of global kernel g_ModelFluidInit  ----- */
+
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  ModelFluidInit
@@ -49,7 +52,7 @@ void g_ModelFluidInit(struct DeviceParameters d, float * value_table){
  *      @return:  success or not
  * =============================================================================
  */
-bool ModelFluidInit(CommandQueue * cmd, SystemInfo * sysinfo, float* value_table){
+bool ModelFluidInit(CommandQueue *cmd, SystemInfo *sysinfo, float *value_table){
     g_ModelFluidInit<<<sysinfo->get_value["num_cores"],\
                         sysinfo->get_value["core_size"]>>>\
                         (*(cmd->get_device_param_pointer), value_table);
@@ -67,8 +70,8 @@ bool ModelFluidInit(CommandQueue * cmd, SystemInfo * sysinfo, float* value_table
  */
 __global__
 void g_ModelFluid(struct DeviceParameters d,
-                  float * current_table,
-                  float * last_table,
+                  float *current_table,
+                  float *last_table,
                   size_t depletion_indicator ){
 
     float best_result = 0;
@@ -98,11 +101,8 @@ void g_ModelFluid(struct DeviceParameters d,
                     best_result = temp_result;
                     //bestq = q;
                 }
-
             }
-
            current_table[dataIdx] = best_result;
-
         }
         else{
             for ( size_t q = 0; q < d_k; ++q){
@@ -114,25 +114,19 @@ void g_ModelFluid(struct DeviceParameters d,
                                            d,
                                            0);
 
-                // if( dataIdx == testnum){
-                //   printf("\n temp_result  <%d> : %f",q, temp_result);
-                // }
-
                 if (temp_result > best_result){
                     best_result = temp_result;
                     //bestq = q;
                 }
-
             }
-            // if( dataIdx == testnum){
-            //   printf("\n");
-            // }
-            current_table[dataIdx] = best_result; // the corresponding q stores in the bestq
+            // the corresponding q is stored in the bestq
+            current_table[dataIdx] = best_result;
         }
     }
     delete mD_index;
     return;
 }       /* -----  end of global kernel g_ModelFluid  ----- */
+
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  ModelFluid
@@ -143,9 +137,9 @@ void g_ModelFluid(struct DeviceParameters d,
  *      @return:  success or not
  * =============================================================================
  */
-bool ModelFluid(CommandQueue * cmd,
-                SystemInfo * sysinfo,
-                float * value_table,
+bool ModelFluid(CommandQueue *cmd,
+                SystemInfo *sysinfo,
+                float *value_table,
                 int current_table_idx,
                 size_t depletion_indicator){
 

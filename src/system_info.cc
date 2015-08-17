@@ -1,12 +1,12 @@
 /*
  * =============================================================================
  *
- *       Filename:  system_info.cu
+ *       Filename:  system_info.cc
  *
  *    Description:   Implementation of SystemInfo
  *
  *        Created:  Tue Jul 28 14:49:25 2015
- *       Modified:  Sun Aug  9 03:54:22 2015
+ *       Modified:  Sun Aug  9 15:15:23 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -14,6 +14,8 @@
  * =============================================================================
  */
 #include "../include/system_info.h"
+
+#include "../include/cuda_support.h"
 
 /*
  *------------------------------------------------------------------------------
@@ -69,19 +71,13 @@ void SystemInfo::print_sys_info () {
  *------------------------------------------------------------------------------
  */
 void SystemInfo::check_gpu () {
-    cudaGetDeviceCount(&num_cuda_devices_);
-    cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, 0);
-    num_cuda_cores_ = (cudainfo->numBlocks) = _ConvertSMVer2Cores(\
-                                         deviceProp.major, deviceProp.minor) *\
-                                         deviceProp.multiProcessorCount;
-    cuda_core_size_ = deviceProp.maxThreadsPerBlock;
+    cuda_CheckGPU(&num_cuda_devices_, &num_cuda_cores_, &cuda_core_size_);
     return ;
 }       /* -----  end of method SystemInfo::check_gpu  ----- */
 
 
 
 /* =============================================================================
- *                         end of file system_info.cu
+ *                         end of file system_info.cc
  * =============================================================================
  */
