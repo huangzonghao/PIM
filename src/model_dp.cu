@@ -7,7 +7,7 @@
  *                    algorithm
  *
  *        Created:  Fri Aug  7 23:47:24 2015
- *       Modified:  Sat Aug 22 04:41:48 2015
+ *       Modified:  Wed Aug 26 04:46:43 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -15,6 +15,69 @@
  * =============================================================================
  */
 #include "../include/models.h"
+__device__ void
+optimize(float *current_values,
+         size_t current,
+         dp_int *depletion,
+         int min_depletion,
+         int max_depletion,
+         dp_int *order,
+         int min_order,
+         int max_order,
+         float *future_values,
+         int period) {
+
+    // Allocate a memory buffer on stack
+    // So we don't need to do it for every loop
+    // Last dimension are used to store the ordering
+    // which could be used for sale
+    int state[n_dimension+1] = {};
+    decode(state, current);
+
+    int n_depletion = 0;
+    int n_order = 0;
+    float max_value = 0.0;
+
+   // struct Demand demand = demand_distribution_at_period[period];
+ struct Demand demand = demand_distribution_at_period[0];
+
+    for (int i = min_depletion; i < max_depletion; i++) {
+        for (int j = min_order; j < max_order; j++) {
+
+            float expected_value = 0.0;
+
+            for (int k = demand.min_demand; k < demand.max_demand; k++) {
+
+                // Always initialize state array before calling of revenue()
+                // As the value is corrupted and can't be used again
+                decode(state, current);
+
+                // By calling revenue(), the state array
+                // now stores the state for future
+                float value = revenue(state, current, i, j, k);
+
+                // And find the corresponding utility of future
+                int future = encode(state);
+
+                value += discount * future_values[future];
+
+                expected_value += demand.distribution[k - demand.min_demand] * value;
+            }
+
+            // Simply taking the moving maximum
+            if (expected_value > max_value + 1e-6) {
+                max_value = expected_value;
+                n_depletion = i;
+                n_order = j;
+            }
+        }
+    }
+
+    // Store the optimal point and value
+    current_values[current] = max_value;
+    depletion[current] = (dp_int) n_depletion;
+    order[current] = (dp_int) n_order;
+}
 /*
  * ===  GLOBAL KERNEL  =========================================================
  *         Name:  g_ModelDPInit
