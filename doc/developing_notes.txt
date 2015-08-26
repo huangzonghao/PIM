@@ -1,0 +1,31 @@
+Tue Jul 28 20:48:24 2015
+Need to find better way to design the class structures
+
+Tue Aug 4 16:48:24 2015
+Use standard library to store the parameters so we can remove the host_param
+and device_param classes
+
+Tue Aug  4 16:35:02 2015
+Now I made up my mind, the class of host_parameters and device_parameters
+shall be inherited from the unsorted_map. Because we always need some
+self-defined methods.
+
+Fri Aug  7 00:49:49 2015
+Now stick to the individual classes for both the host parameters and device
+parameters, but had a more clever way to deal with the parameters
+
+Fri Aug  7 18:45:23 2015
+if we don't think about the recovery and recording mode at the beginning, then
+the program is first gonna be divided by policy (models), and we will check if
+there are anything that can be shared.
+Also we need to find a way to use as little .cu files as possible.
+
+Tue Aug 11 03:56:18 2015
+There is no way to do forward declaration of std containers
+
+Thu Aug 20 23:27:22 2015
+The recording file shall store the table directly with each row containing k
+elements and we have k^(m-1) rows in total
+Tue Aug 25 02:56:23 2015
+Use assert to handle all the abnormal situations. Make the conversion in progress
+but still need to find a better way to deal with the run time errors
