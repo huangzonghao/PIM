@@ -7,7 +7,7 @@
  *                    algorithm
  *
  *        Created:  Fri Aug  7 23:47:24 2015
- *       Modified:  Wed Aug 26 04:46:43 2015
+ *       Modified:  Wed Aug 26 16:39:06 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -15,69 +15,9 @@
  * =============================================================================
  */
 #include "../include/models.h"
-__device__ void
-optimize(float *current_values,
-         size_t current,
-         dp_int *depletion,
-         int min_depletion,
-         int max_depletion,
-         dp_int *order,
-         int min_order,
-         int max_order,
-         float *future_values,
-         int period) {
+#include "../include/model_support.h"
+#include "../include/demand_distribution.h"
 
-    // Allocate a memory buffer on stack
-    // So we don't need to do it for every loop
-    // Last dimension are used to store the ordering
-    // which could be used for sale
-    int state[n_dimension+1] = {};
-    decode(state, current);
-
-    int n_depletion = 0;
-    int n_order = 0;
-    float max_value = 0.0;
-
-   // struct Demand demand = demand_distribution_at_period[period];
- struct Demand demand = demand_distribution_at_period[0];
-
-    for (int i = min_depletion; i < max_depletion; i++) {
-        for (int j = min_order; j < max_order; j++) {
-
-            float expected_value = 0.0;
-
-            for (int k = demand.min_demand; k < demand.max_demand; k++) {
-
-                // Always initialize state array before calling of revenue()
-                // As the value is corrupted and can't be used again
-                decode(state, current);
-
-                // By calling revenue(), the state array
-                // now stores the state for future
-                float value = revenue(state, current, i, j, k);
-
-                // And find the corresponding utility of future
-                int future = encode(state);
-
-                value += discount * future_values[future];
-
-                expected_value += demand.distribution[k - demand.min_demand] * value;
-            }
-
-            // Simply taking the moving maximum
-            if (expected_value > max_value + 1e-6) {
-                max_value = expected_value;
-                n_depletion = i;
-                n_order = j;
-            }
-        }
-    }
-
-    // Store the optimal point and value
-    current_values[current] = max_value;
-    depletion[current] = (dp_int) n_depletion;
-    order[current] = (dp_int) n_order;
-}
 /*
  * ===  GLOBAL KERNEL  =========================================================
  *         Name:  g_ModelDPInit
@@ -150,41 +90,42 @@ bool ModelDPInit(CommandQueue * cmd, SystemInfo * sysinfo, float *value_table){
 __global__
 void g_ModelDP(float *table_to_update,
                float *table_for_reference,
-               int *z,
-               int *q,
-               size_t k,
+               int *z_records,
+               int *q_records,
                size_t level_size,
-               size_t batchIdx){
+               size_t batchIdx,
+               DeviceParameters d){
 
     size_t myIdx = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (myIdx < level_size) {
 
-        size_t current = batch_idx * level_size + myIdx;
-        size_t parent = current - level_size;
+        size_t dataIdx = batch_idx * level_size + myIdx;
+        size_t parentIdx = dataIdx - level_size;
 
         if (current == 0 || depletion[parent] == 0) {
-            optimize(table_to_update,
-                    // the state we are computing
-                    current,
-                    // n_depletion, min_depletion, max_depletion
-                    z, 0, 2,
-                    // n_order, min_order, max_order
-                    q, 0, k,
-                    // future utility for reference
-                    table_for_reference);
-
-        } else /* (depletion[parent] != 0) */ {
-            optimize(table_to_update,
-                    // the state we are computing
-                    current,
-                    // n_depletion, min_depletion, max_depletion
-                    z, z[parent]+1, z[parent]+2,
-                    // n_order, min_order, max_order
-                    q, q[parent], q[parent]+1,
-                    // future utility for reference
-                    table_for_reference);
-
+            d_StateValueUpdate(table_to_update,
+                               table_for_reference,
+                               dataIdx,
+                               z_records, q_records,
+                               /* [min_z, max_z] */
+                               0, 2,
+                               /* [min_q, max_q] */
+                               0, k - 1,
+                               0, d);
+        }
+        else /* (depletion[parent] != 0) */ {
+            d_StateValueUpdate(table_to_update,
+                               table_for_reference,
+                               z_records, q_records,
+                               dataIdx,
+                               /* [min_z, max_z] */
+                               z_records[parentIdx] + 1,
+                               z_records[parentIdx] + 2,
+                               /* [min_q, max_q] */
+                               q_records[parentIdx],
+                               q_records[parentIdx] + 1,
+                               0, d);
         }
     }
     return;
@@ -198,23 +139,19 @@ void g_ModelDP(float *table_to_update,
  *      @return:  success or not
  * =============================================================================
  */
-bool ModelDP(CommandQueue * cmd,
-             SystemInfo * sysinfo,
+bool ModelDP(CommandQueue *cmd,
+             SystemInfo *sysinfo,
              float *table_to_update,
              float *table_for_reference,
-             int *z,
-             int *q){
+             int *z, int *q){
 
-    size_t level_size = std::pow(cmd->get_h_params("k"), cmd->get_h_params("m"));
+    size_t level_size = pow(cmd->get_h_params("k"), cmd->get_h_params("m"));
     // The very first state 0,0,...,0
     g_ModelDP<<<1, 1>>>(  table_to_update,
                           table_for_reference,
-                          z,
-                          q,
-                          k,
-                          1,
-                          0
-                        );
+                          z, q,
+                          1, 0
+                          *(cmd->get_device_param_pointer) );
 
     size_t num_blocks_used;
     size_t core_size = sysinfo->get_value("core_size");
@@ -223,11 +160,10 @@ bool ModelDP(CommandQueue * cmd,
         for (size_t i_batch = 1; i_batch < n_capacity; i_batch++) {
             g_ModelDP<<<num_blocks_used, core_size >>>(  table_to_update,
                                                          table_for_reference,
-                                                         z,
-                                                         q,
-                                                         k,
+                                                         z, q,
+                                                         level_size,
                                                          i_batch,
-                                                         level_size);
+                                                         *(cmd->get_device_param_pointer) );
         }
     }
     return true;

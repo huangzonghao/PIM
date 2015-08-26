@@ -6,7 +6,7 @@
  *    Description:  All the functions to compute the fluid policy
  *
  *        Created:  Fri Aug  7 23:34:03 2015
- *       Modified:  Mon Aug 10 18:39:57 2015
+ *       Modified:  Wed Aug 26 16:28:54 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -74,56 +74,39 @@ void g_ModelFluid(struct DeviceParameters d,
                   float *last_table,
                   size_t depletion_indicator ){
 
-    float best_result = 0;
-    //float bestq = 0;
-    float temp_result = 0;
-    size_t storage_today = 0;
     // this is both the thread index and the data index in this batch
     size_t myIdx = blockIdx.x * blockDim.x + threadIdx.x;
     size_t dataIdx = myIdx + batchIdx * gridDim.x * blockDim.x;
-    int * mD_index = new int[d.m];
 
     storage_today = d_decode(dataIdx, d.m, d.k, mD_index );
 
     /* because we may use more threads than needed */
     if(dataIdx < d.table_length){
         if(depletion_indicator){ // the last day
-            for ( size_t q = 0; q < d.k; ++q){
-                temp_result = d_StateValue( last_table,
-                                            mD_index,
-                                            storage_today,
-                                            depletion_indicator * d.T,
-                                            q,
-                                            d,
-                                            0 );
-
-                if (temp_result > best_result){
-                    best_result = temp_result;
-                    //bestq = q;
-                }
-            }
-           current_table[dataIdx] = best_result;
+            d_StateValueUpdate( current_table,
+                                last_table,
+                                dataIdx,
+                                NULL, NULL,
+                                /* [min_z, max_z] */
+                                depletion_indicator * d.T, depletion_indicator * d.T,
+                                /* [min_q, max_q] */
+                                0, d.k - 1,
+                                0, /* the index of the demand distribution */
+                                d);
         }
         else{
-            for ( size_t q = 0; q < d_k; ++q){
-                temp_result = d_StateValue(last_table,
-                                           mD_index,
-                                           storage_today,
-                                           0,
-                                           q,
-                                           d,
-                                           0);
-
-                if (temp_result > best_result){
-                    best_result = temp_result;
-                    //bestq = q;
-                }
-            }
-            // the corresponding q is stored in the bestq
-            current_table[dataIdx] = best_result;
+            d_StateValueUpdate( current_table,
+                                last_table,
+                                dataIdx,
+                                NULL, NULL,
+                                /* [min_z, max_z] */
+                                0, 0,
+                                /* [min_q, max_q] */
+                                0, d.k - 1,
+                                0, /* the index of the demand distribution */
+                                d);
         }
     }
-    delete mD_index;
     return;
 }       /* -----  end of global kernel g_ModelFluid  ----- */
 
@@ -155,7 +138,7 @@ bool ModelFluid(CommandQueue *cmd,
              value_table[1 - current_table_idx],
              depletion_indicator);
     }
-    return;
+    return true;
 }       /* -----  end of function ModelFluid  ----- */
 
 

@@ -26,6 +26,13 @@ There is no way to do forward declaration of std containers
 Thu Aug 20 23:27:22 2015
 The recording file shall store the table directly with each row containing k
 elements and we have k^(m-1) rows in total
+
 Tue Aug 25 02:56:23 2015
 Use assert to handle all the abnormal situations. Make the conversion in progress
 but still need to find a better way to deal with the run time errors
+
+Wed Aug 26 16:06:57 2015
+Should carefully defined the meaning of k and m, are they included or not in the
+range of the value they represented
+Currently I am taking it as not, which means there are only m dimensions in this
+problem including 0, and the highest dimension is m - 1

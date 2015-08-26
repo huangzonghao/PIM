@@ -17,19 +17,32 @@
 #ifndef MODEL_SUPPORT_H_
 #define MODEL_SUPPORT_H_
 __device__
-void d_DepleteStorage(int * mD_index, size_t deplete_amount, size_t m);
+void d_DepleteStorage(int *mD_index, size_t deplete_amount, size_t m);
 
 __device__
-size_t d_GetTomorrowIndex(int * mD_index, int today_deplete, size_t m);
+size_t d_GetTomorrowIndex(int *mD_index, int today_deplete, size_t m);
 
 __device__
-float d_StateValue(float * last_table,
-                   int * mD_index,
+float d_StateValue(float *last_table,
+                   int *mD_index,
                    size_t storage_today,
                    int z,
                    int q,
-                   struct DeviceParameters &d,
-                   int demand_table_idx);
+                   int demand_table_idx,
+                   struct DeviceParameters &d);
+
+__device__
+void d_StateValueUpdate( float *table_to_update,
+                         float *table_for_reference,
+                         size_t dataIdx,
+                         int *z_records,
+                         int *q_records,
+                         int min_z,
+                         int max_z,
+                         int min_q,
+                         int max_q,
+                         int demand_distri_idx,
+                         DeviceParameters &d );
 
 #endif   /* ----- #ifndef MODEL_SUPPORT_H_  ----- */
 /* =============================================================================
