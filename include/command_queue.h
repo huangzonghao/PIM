@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Tue Aug 11 10:10:06 2015
+ *       Modified:  Thu Aug 27 13:52:20 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -49,21 +49,21 @@ class CommandQueue
     ~CommandQueue ();
 
     /* =========================   ACCESSORS   =============================== */
-    HostParameters * get_host_param_pointer();
-    DeviceParameters * get_device_param_pointer();
-    float get_h_param(const char * var);
-    const char * get_config(const char * var);
+    HostParameters *get_host_param_pointer();
+    DeviceParameters *get_device_param_pointer();
+    float get_h_param(const char *var);
+    const char *get_config(const char *var);
 
-    bool check_command(const char * var);
+    bool check_command(const char *var);
 
     /* =========================   MUTATORS    =============================== */
-    bool load_host_params(const char * var, float value);
-    bool load_files(const char * type);
+    bool load_host_params(const char *var, float value);
+    bool load_files(const char *type);
     /*
      * FLAGS : INPUTFILE | OUTPUTFILE | OUPUTFORMAT | POLICY | RECOVERY |
      *            ENABLEVERBOSE | ENABLELOG | PRINTHELP | RECORDING
      */
-    bool load_commands( const char * var, const char * value );
+    bool load_commands( const char *var, const char *value );
 
     /* =========================   OPERATORS   =============================== */
     bool update_device_params();
@@ -75,9 +75,9 @@ class CommandQueue
   private:
     /* ========================  DATA MEMBERS  =============================== */
 
-    HostParameters   * host_params_;
+    HostParameters *host_params_;
     /* note when passing to kernel, we shall not use pass by reference anymore */
-    struct DeviceParameters * device_params_;
+    struct DeviceParameters *device_params_;
 
     /* :REMARKS:Mon Aug 10 23:17:52 2015:huangzonghao:
      *  when in .cc file of course we are gonna use std containers to manage
@@ -102,7 +102,7 @@ class CommandQueue
      *  shall prefer char array when dealing with const chars
      */
     std::string configs_[7];
-    const char* config_names_[7] = {"input_file_name",
+    const char *config_names_[7] = {"input_file_name",
                                     "output_file_name",
                                     "output_format",
                                     "policy",
@@ -116,7 +116,7 @@ class CommandQueue
     bool recording_enabled_;
     bool print_help_;
 
-    std::string * get_config_ptr(const char * var);
+    std::string *get_config_ptr(const char *var);
 
 }; /* -----  end of class CommandQueue  ----- */
 

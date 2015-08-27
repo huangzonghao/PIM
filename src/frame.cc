@@ -6,7 +6,7 @@
  *    Description:  The definition of the frame function for the PIM problem
  *
  *        Created:  Thu Jul 23 01:09:07 2015
- *       Modified:  Mon Aug 10 23:17:03 2015
+ *       Modified:  Thu Aug 27 16:00:58 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -40,8 +40,9 @@
  * =============================================================================
  */
 bool LetsRock ( CommandQueue * cmd, SystemInfo * sysinfo ){
+    bool model_catch_error;
     /* first do some command initialization such as declare two value tables */
-    float **value_tables =\
+    float **value_tables =
         DeclareValueTable(cmd->get_device_param_pointer()->table_length, sysinfo);
 
 
@@ -52,7 +53,7 @@ bool LetsRock ( CommandQueue * cmd, SystemInfo * sysinfo ){
  *-----------------------------------------------------------------------------*/
     if( strcmp(cmd->get_config("policy"), "fluid") == 0 ||
         strcmp(cmd->get_config("policy"),  "all") == 0 ){
-        ModelFluidInit(cmd, sysinfo, value_tables);
+        ModelFluidInit(cmd, sysinfo, value_tables[0]);
         for ( int i_period = cmd->get_h_param("T"); i_period > 0; --i_period ){
             ModelFluid(cmd, sysinfo, i_period);
         }
@@ -62,10 +63,16 @@ bool LetsRock ( CommandQueue * cmd, SystemInfo * sysinfo ){
  *-----------------------------------------------------------------------------*/
     if( strcmp(cmd->get_config("policy"), "DP") == 0 ||
         strcmp(cmd->get_config("policy"),  "all") == 0 ){
+        /* for dp policy we need two tabels to store the z, q information on the
+         *     device
+         */
         ModelDPInit(cmd, sysinfo);
         for ( int i_period = cmd->get_h_param("T"); i_period > 0; --i_period ){
-            ModelDP(cmd, sysinfo, i_period);
-        }
+            model_catch_error= ModelDP(CommandQueue *cmd,
+                                       SystemInfo *sysinfo,
+                                       table_to_update,
+                                       table_for_reference,
+                                       z, q);
     }
     return true;
 }       /* -----  end of function LetsRock  ----- */

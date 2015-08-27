@@ -7,7 +7,7 @@
  *                    algorithm
  *
  *        Created:  Fri Aug  7 23:47:24 2015
- *       Modified:  Wed Aug 26 16:39:06 2015
+ *       Modified:  Wed Aug 26 17:23:40 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -33,7 +33,10 @@
  *  for each level, we are gonna calculate from the 1 to k for some digit
  */
 __global__
-void g_ModelDPInit(float *current_table, size_t batchIdx, size_t level_size ){
+void g_ModelDPInit(float *current_table,
+                   size_t batchIdx,
+                   size_t level_size,
+                   float s ){
     /* myIdx is the index of the current state within each level */
     size_t myIdx = threadIdx.x + blockIdx.x * blockDim.x;
     if ( myIdx < level_size ){
@@ -43,7 +46,7 @@ void g_ModelDPInit(float *current_table, size_t batchIdx, size_t level_size ){
             current_table[current_data_idx] = 0.0;
         }
         else {
-            current_table[current_data_idx] = current_table[parent_data_idx] + 1;
+            current_table[current_data_idx] = current_table[parent_data_idx] + s;
         }
     }
     return;
@@ -71,7 +74,8 @@ bool ModelDPInit(CommandQueue * cmd, SystemInfo * sysinfo, float *value_table){
         for(int i_batch = 1; i_batch < cmd->get_h_params("k"); ++i_batch){
             g_ModelDPInit<<<num_blocks_used, core_size>>>(value_table,
                                                           i_batch,
-                                                          level_size);
+                                                          level_size,
+                                                          cmd->get_h_params("s"));
         }
     }
     return true;

@@ -6,7 +6,7 @@
  *    Description:  The header file for all the models
  *
  *        Created:  Fri Aug  7 23:26:29 2015
- *       Modified:  Sat Aug  8 16:12:51 2015
+ *       Modified:  Wed Aug 26 16:50:58 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -25,7 +25,7 @@ const int num_policy_options = 3;
 const char * policy_options[] = { "all",
                                   "tree",
                                   "fluid" };
-bool ModelFluidInit(CommandQueue*, SystemInfo*);
+bool ModelFluidInit(CommandQueue*, SystemInfo*, float *value_table );
 bool ModelFluid(CommandQueue*, SystemInfo*, int idx);
 bool ModelDPInit(CommandQueue*, SystemInfo*);
 bool ModelDP(CommandQueue*, SystemInfo*, int idx);

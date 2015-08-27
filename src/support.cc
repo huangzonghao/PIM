@@ -8,7 +8,7 @@
  *                    or algorithm
  *
  *        Created:  Wed Jul 22 14:11:43 2015
- *       Modified:  Sun Aug  9 01:27:14 2015
+ *       Modified:  Thu Aug 27 16:34:02 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -23,9 +23,15 @@
 #include <unistd.h>
 #include <signal.h>
 #include <fstream>
+#include <iostream>
 
 #include "../include/support-inl.h"
 #include "../include/command_queue.h"
+
+/* the following macros are for the format of the progress recording file */
+#define PROGRESS_RECORDING_FILE_HEADER "/* Progress Recording File */"
+#define PROGRESS_RECORDING_FILE_FIRST_TABLE "/* Table To Update */"
+#define PROGRESS_RECORDING_FILE_SECOND_TABLE "/* Table For Reference */"
 
 /* #####   FUNCTION DEFINITIONS  -  EXPORTED FUNCTIONS   ##################### */
 
@@ -145,12 +151,13 @@ bool LoadCommands ( int argc, char ** argv, CommandQueue * cmd ){
  */
  /* :TODO:Wed Jul 22 17:03:32 2015 17:03:huangzonghao: when exiting, first report
   * the current progress, then ask if need to store the current progress */
-void InterruptHandler ( int s ){
-    if (s == 2){
-        printf("User interrupt! Exit\n");
-        return;
-    }
-}       /* -----  end of function InterruptHandler  ----- */
+/* void InterruptHandler ( int s ){
+ *     if (s == 2){
+ *         printf("User interrupt! Exit\n");
+ *         return;
+ *     }
+ * }       [> -----  end of function InterruptHandler  ----- <]
+ */
 
 
 /*
@@ -201,8 +208,29 @@ bool LoadParameters ( CommandQueue * cmd ){
   * output file name and print the error msg
   * then generate the output file based on the indicated format and return status
   */
-bool WriteOutputFile ( const float * value_table, const std::string &output_format,\
-                       const std::string &output_filename ){
+bool WriteOutputFile ( const float *value_table,
+                       const size_t table_length,
+                       const int output_format,
+                       const char *output_file_name ){
+
+    if ( DoesItExist(output_file_name) ) {
+        std::string user_option;
+        printf("%s already exists, overwritten? (y/n) : ", output_file_name);
+        std::cin >> user_option;
+        if ( user_option == "y")
+            remove(output_file_name);
+        else {
+            return false;
+        }
+    }
+    std::ofstream ofs;
+    ofs.open (output_file_name, std::ofstream::out | std::ofstream::app);
+    switch(output_format){
+        case 1:
+            for(size_t i = 0; i < table_length; ++i){
+                ofs << value_table[i] << std::endl;
+            }
+    }
 
     return true;
 }       /* -----  end of function WriteOutputFile  ----- */
@@ -216,6 +244,13 @@ bool WriteOutputFile ( const float * value_table, const std::string &output_form
  *      @return:  status of recording
  * =============================================================================
  */
+
+/* :REMARKS:Thu Aug 27 13:48:06 2015:huangzonghao:
+ *  Note when ever we want to use the recording functionality, the corresponding
+ *  configuration file should always be there, so we can just load the progress
+ *  before the real calculation
+ */
+
  /* :TODO:Wed Jul 22 17:41:14 2015 17:41:huangzonghao:
   * a zero length record_label means this is the first time to store, then create
   * the file and name it after the timestamp then store the name to record_label
@@ -223,9 +258,39 @@ bool WriteOutputFile ( const float * value_table, const std::string &output_form
   * first then rename it to the record_label
   * May need to set up a struct to store some status values
   */
-bool RecordProgress ( const float * current_value_table,\
-                      const float * prev_value_table,\
-                      const std::string &record_label ){
+bool RecordProgress ( const float *first_table,
+                      const float *second_table,
+                      const size_t table_length,
+                      const char *progress_file_name ){
+    printf("Now strat to record the progress.\n");
+    if ( DoesItExist(progress_file_name) ) {
+        std::string user_option;
+        printf("The file %s already exists, overwirtten? (y/n) : ", progress_file_name);
+        std::cin >> user_option;
+        if ( user_option == "y")
+            remove(progress_file_name);
+        else {
+            return false;
+        }
+    }
+    std::ofstream ofs;
+    ofs.open (progress_file_name , std::ofstream::out | std::ofstream::app);
+    /* write the header */
+    ofs << PROGRESS_RECORDING_FILE_HEADER << std::endl;
+    /* first write the current table */
+    ofs << PROGRESS_RECORDING_FILE_FIRST_TABLE << std::endl;
+    for(size_t i = 0; i < table_length; ++i){
+        ofs << first_table[i] << std::endl;
+    }
+
+    /* then the table to update */
+    ofs << PROGRESS_RECORDING_FILE_SECOND_TABLE << std::endl;
+    for (size_t i = 0; i < table_length; ++i){
+        ofs << second_table[i] << std::endl;
+    }
+
+    ofs.close();
+    printf("The progerss recording file %s has written successfully!\n", progress_file_name);
 
     return true;
 }       /* -----  end of function RecordProgress  ----- */
@@ -234,18 +299,50 @@ bool RecordProgress ( const float * current_value_table,\
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  LoadProgress
- *  Description:  Load the previous stored recording file
+ *  Description:  Load the previous stored recording file to the provided two host
+ *                  arrays which will be handled by the functions in frame
  *       @param:  recording_file_name, pointer_to_two_value_tables
  *      @return:  status of loading
  * =============================================================================
  */
- /* :TODO:Wed Jul 22 17:51:56 2015 17:51:huangzonghao:
-  * print the error msg if the recording file is not found and return false
-  */
-bool LoadProgress ( const std::string &record_filename,\
-                    const float * current_value_table,\
-                    const float * prev_value_table ){
+bool LoadProgress ( float *first_table,
+                    float *second_table,
+                    const size_t table_length,
+                    const char *progress_file_name ){
+    std::ifstream fin (progress_file_name);
+    if (!fin.is_open()){
+        printf("Error: The progerss recording file %s is not found!\n", progress_file_name);
+        return false;
+    }
+    std::string temp_line;
 
+    /* get the first line and check if this is a progerss recording file */
+    std::getline(fin, temp_line);
+    if(temp_line != PROGRESS_RECORDING_FILE_HEADER){
+        printf("Error: %s is not a valid progress recording file.!\n", progress_file_name);
+        return false;
+    }
+
+    /* then the first table */
+    std::getline(fin, temp_line);
+    if(temp_line != PROGRESS_RECORDING_FILE_FIRST_TABLE){
+        printf("Error: cannot find the information of the first table!\n");
+        return false;
+    }
+    for (size_t i = 0; i < table_length; ++i){
+        fin >> first_table[i];
+    }
+
+    /* then the second table */
+    std::getline(fin, temp_line);
+    if(temp_line != PROGRESS_RECORDING_FILE_SECOND_TABLE){
+        printf("Error: cannot find the information of the second table!\n");
+        return false;
+    }
+    for(size_t i = 0; i < table_length; ++i){
+        fin >> second_table[i];
+    }
+    fin.close();
     return true;
 }       /* -----  end of function LoadProgress  ----- */
 
@@ -262,10 +359,11 @@ bool LoadProgress ( const std::string &record_filename,\
   * the function will be called at the end of each loop, print the info of current
   * progress
   */
-void PrintVerboseInfo (){
-
-    return;
-}       /* -----  end of function PrintVerboseInfo  ----- */
+/* void PrintVerboseInfo (){
+ *
+ *     return;
+ * }       [> -----  end of function PrintVerboseInfo  ----- <]
+ */
 
 
 /*
@@ -280,10 +378,11 @@ void PrintVerboseInfo (){
   * need to use some flag to decided which position the function is at, the starting
   * of the program or the middle or what....
   */
-bool WriteLog ( CommandQueue &cmd ){
-    cmd->print_log();
-    return true;
-}       /* -----  end of function WriteLog  ----- */
+/* bool WriteLog ( CommandQueue &cmd ){
+ *     cmd->print_log();
+ *     return true;
+ * }       [> -----  end of function WriteLog  ----- <]
+ */
 
 
 /* =============================================================================

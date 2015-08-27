@@ -6,7 +6,7 @@
  *    Description:  The definition of some supporting inline functions
  *
  *        Created:  Thu Jul 23 00:40:42 2015
- *       Modified:  Sat Aug  8 00:02:48 2015
+ *       Modified:  Thu Aug 27 16:26:14 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -31,7 +31,7 @@
  *      @return:  whether the file exists or not
  * =============================================================================
  */
-inline bool DoesItExist ( const char* filename ){
+inline bool DoesItExist ( const char *filename ){
     std::ifstream f(filename);
     if (f.good()) {
         f.close();
@@ -53,8 +53,8 @@ inline bool DoesItExist ( const char* filename ){
  *      @return:  output of stdout
  * =============================================================================
  */
-inline const char* ExeCMD ( const char * cmd ){
-    FILE* pipe = popen(cmd, "r");
+inline const char *ExeCMD ( const char *cmd ){
+    FILE *pipe = popen(cmd, "r");
     if (!pipe) return "ERROR";
     char buffer[128];
     std::string result = "";
@@ -75,7 +75,7 @@ inline const char* ExeCMD ( const char * cmd ){
  *      @return:  bool
  * =============================================================================
  */
-bool IsValidFileFormat(const char * var){
+bool IsValidFileFormat(const char *var){
     for (int i = 0; i < num_policy_options; ++i){
         if (var == policy_options[i])
             return true;
@@ -91,7 +91,7 @@ bool IsValidFileFormat(const char * var){
  *      @return:  bool
  * =============================================================================
  */
-bool IsValidPolicy(const char * var){
+bool IsValidPolicy(const char *var){
     for (int i = 0; i < num_file_format_options; ++i){
         if (var == file_format_options[i])
             return true;
