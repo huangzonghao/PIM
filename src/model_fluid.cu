@@ -6,7 +6,7 @@
  *    Description:  All the functions to compute the fluid policy
  *
  *        Created:  Fri Aug  7 23:34:03 2015
- *       Modified:  Fri Aug 28 09:25:00 2015
+ *       Modified:  Fri Aug 28 10:23:00 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -20,6 +20,10 @@
 #include "../thirdparty/nvidia/helper_cuda.h"
 
 #include "../include/model_support.cuh"
+#include "../include/model_support-inl.cuh"
+#include "../include/device_parameters.h"
+#include "../include/command_queue.h"
+#include "../include/system_info.h"
 
 
 /*
@@ -36,13 +40,12 @@ void g_ModelFluid(struct DeviceParameters d,
                   float *table_to_update,
                   float *table_for_reference,
                   int demand_distri_idx,
-                  size_t depletion_indicator ){
+                  size_t depletion_indicator,
+                  size_t batch_idx ){
 
     // this is both the thread index and the data index in this batch
     size_t myIdx = blockIdx.x * blockDim.x + threadIdx.x;
-    size_t dataIdx = myIdx + batchIdx * gridDim.x * blockDim.x;
-
-    storage_today = d_decode(dataIdx, d.m, d.k, mD_index );
+    size_t dataIdx = myIdx + batch_idx * gridDim.x * blockDim.x;
 
     /* because we may use more threads than needed */
     if(dataIdx < d.table_length){
@@ -92,17 +95,19 @@ bool ModelFluid(CommandQueue *cmd,
                 size_t depletion_indicator){
 
     // each thread will take care of a state at once
-    size_t batch_amount = d.table_length / sysinfo->get_value("num_cores") /
-                        sysinfo->get_value("core_size") + 1;
+    size_t batch_amount = cmd->get_device_param_pointer()->table_length
+                        / sysinfo->get_value("num_cores")
+                        / sysinfo->get_value("core_size") + 1;
 
     for ( size_t i = 0; i < batch_amount; ++i){
         g_ModelFluid
             <<<sysinfo->get_value("num_cores"), sysinfo->get_value("core_size")>>>
-            (d,
+            (*(cmd->get_device_param_pointer()),
              table_to_update,
              table_for_reference,
              demand_distri_idx,
-             depletion_indicator);
+             depletion_indicator,
+             i);
     }
     return true;
 }       /* -----  end of function ModelFluid  ----- */

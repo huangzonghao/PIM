@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Fri Aug 28 08:24:43 2015
+ *       Modified:  Fri Aug 28 10:28:46 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -95,20 +95,14 @@ class CommandQueue
      * 5    string  recording_file_name
      * 6    string  logging_file_name
      */
-    const int num_configs_ = 7;
+    static const int num_configs_ = 7;
 
     /* :REMARKS:Fri Aug  7 13:08:20 2015:huangzonghao:
      *  Use string here just for the simplicity to manage dynamic string length
      *  shall prefer char array when dealing with const chars
      */
     std::string configs_[7];
-    const char *config_names_[7] = {"input_file_name",
-                                    "output_file_name",
-                                    "output_format",
-                                    "policy",
-                                    "recovery_file_name",
-                                    "recording_file_name",
-                                    "logging_file_name"};
+    static const char *config_names_[];
 
     bool verbose_enabled_;
     bool recovery_enabled_;
@@ -120,6 +114,13 @@ class CommandQueue
 
 }; /* -----  end of class CommandQueue  ----- */
 
+const char *CommandQueue::config_names_[7] = {"input_file_name",
+                                "output_file_name",
+                                "output_format",
+                                "policy",
+                                "recovery_file_name",
+                                "recording_file_name",
+                                "logging_file_name"};
 
 
 

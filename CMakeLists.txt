@@ -1,6 +1,7 @@
 cmake_minimum_required ( VERSION 2.8)
 
-project(Perishable Inventory Management)
+project(Perishable_Inventory_Management)
+find_package(CUDA)
 
 include_directories(BEFORE PROJECT_SOURCE_DIR)
 add_subdirectory(src)

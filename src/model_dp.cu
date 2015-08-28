@@ -7,7 +7,7 @@
  *                    algorithm
  *
  *        Created:  Fri Aug  7 23:47:24 2015
- *       Modified:  Fri Aug 28 09:27:57 2015
+ *       Modified:  Fri Aug 28 09:53:36 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -94,13 +94,14 @@ bool ModelDP(CommandQueue *cmd,
     g_ModelDP<<<1, 1>>>(  table_to_update,
                           table_for_reference,
                           z, q,
-                          1, 0
+                          1, 0,
                           *(cmd->get_device_param_pointer) );
 
     size_t num_blocks_used;
     size_t core_size = sysinfo->get_value("core_size");
     for (size_t i_level = 0; i_level < cmd->get_h_params("m"); ++i_level) {
         num_blocks_used = i_level * cmd->get_h_params("k");
+        level_size = pow(cmd->get_h_params("k"), i_level);
         for (size_t i_batch = 1; i_batch < n_capacity; i_batch++) {
             g_ModelDP<<<num_blocks_used, core_size >>>(  table_to_update,
                                                          table_for_reference,
