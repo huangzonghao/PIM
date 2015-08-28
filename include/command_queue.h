@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Thu Aug 27 13:52:20 2015
+ *       Modified:  Fri Aug 28 08:24:43 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -22,10 +22,8 @@
 
 class HostParameters;
 struct DeviceParameters;
+struct DemandDistribution;
 
-/* :TODO:Mon Jul 27 03:17:32 2015:huangzonghao:
- * the parameterloading should be done by the command queue
- */
 /*
  * =============================================================================
  *        Class:  CommandQueue
@@ -51,6 +49,7 @@ class CommandQueue
     /* =========================   ACCESSORS   =============================== */
     HostParameters *get_host_param_pointer();
     DeviceParameters *get_device_param_pointer();
+    DemandDistribution *get_h_demand_pointer(int index);
     float get_h_param(const char *var);
     const char *get_config(const char *var);
 
@@ -83,7 +82,8 @@ class CommandQueue
      *  when in .cc file of course we are gonna use std containers to manage
      *  the dynamic stuff.....
      */
-    std::vector<float*> demand_table_pointers;
+    /* this holds the pointers to the distribution table on the device */
+    std::vector<DemandDistribution*> demand_table_pointers;
 
     /* Config List
      * No.  type    name
@@ -124,8 +124,6 @@ class CommandQueue
 
 
 #endif   /* ----- #ifndef COMMAND_QUEUE_H_  ----- */
-
-
 /* =============================================================================
  *                         end of file command_queue.h
  * =============================================================================

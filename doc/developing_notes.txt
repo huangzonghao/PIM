@@ -39,3 +39,8 @@ problem including 0, and the highest dimension is m - 1
 
 Thu Aug 27 16:21:13 2015
 Shall store all the options as numbers instead of simply char array
+
+Fri Aug 28 02:59:00 2015
+For the options I think it would be much better if we use the defined macros in
+the header file instead of just simple strings!!!! After all, all those strings
+are just for coding convenience

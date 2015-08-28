@@ -7,7 +7,7 @@
  *                    algorithm
  *
  *        Created:  Fri Aug  7 23:47:24 2015
- *       Modified:  Wed Aug 26 17:23:40 2015
+ *       Modified:  Fri Aug 28 09:27:57 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -17,69 +17,6 @@
 #include "../include/models.h"
 #include "../include/model_support.h"
 #include "../include/demand_distribution.h"
-
-/*
- * ===  GLOBAL KERNEL  =========================================================
- *         Name:  g_ModelDPInit
- *  Description:  init the DP table with the tree structrue
- *       @param:  current table, the index of the current level index, the total
- *                   number of states contained in this level and the batch index
- *                   for the current level (how many turns that the kernel has
- *                   been working on this level)
- * =============================================================================
- */
-
-/* :REMARKS:Tue Aug 25 19:28:15 2015:huangzonghao:
- *  for each level, we are gonna calculate from the 1 to k for some digit
- */
-__global__
-void g_ModelDPInit(float *current_table,
-                   size_t batchIdx,
-                   size_t level_size,
-                   float s ){
-    /* myIdx is the index of the current state within each level */
-    size_t myIdx = threadIdx.x + blockIdx.x * blockDim.x;
-    if ( myIdx < level_size ){
-        size_t current_data_idx = batchIdx * level_size + myIdx;
-        size_t parent_data_idx = current_data_idx - level_size;
-        if(current_data_idx == 0){
-            current_table[current_data_idx] = 0.0;
-        }
-        else {
-            current_table[current_data_idx] = current_table[parent_data_idx] + s;
-        }
-    }
-    return;
-}       /* -----  end of global kernel g_ModelDPInit  ----- */
-
-/*
- * ===  FUNCTION  ==============================================================
- *         Name:  ModelDPInit
- *  Description:  The initialization function for ModelDP
-                      to calculate all the state value from the boundary conditions
- *       @param:  the control sequence, the system information
- *      @return:  success or not
- * =============================================================================
- */
-bool ModelDPInit(CommandQueue * cmd, SystemInfo * sysinfo, float *value_table){
-    /* the first layer with level zero and level size one */
-    g_ModelDPInit<<<1,1>>>(value_table, 0, 1);
-    /* then the each level just get larger and larger */
-    size_t level_size;
-    size_t num_blocks_used;
-    size_t core_size = sysinfo->get_value("core_size");
-    for(int i_level = 0; i_level < cmd->get_h_params("m"); ++i_level){
-        level_size = pow(cmd->get_h_params("m"), i_level);
-        num_blocks_used = level_size / core_size + 1;
-        for(int i_batch = 1; i_batch < cmd->get_h_params("k"); ++i_batch){
-            g_ModelDPInit<<<num_blocks_used, core_size>>>(value_table,
-                                                          i_batch,
-                                                          level_size,
-                                                          cmd->get_h_params("s"));
-        }
-    }
-    return true;
-}       /* -----  end of function ModelDPInit  ----- */
 
 /*
  * ===  GLOBAL KERNEL  =========================================================
@@ -94,6 +31,7 @@ bool ModelDPInit(CommandQueue * cmd, SystemInfo * sysinfo, float *value_table){
 __global__
 void g_ModelDP(float *table_to_update,
                float *table_for_reference,
+               int demand_distri_idx,
                int *z_records,
                int *q_records,
                size_t level_size,
@@ -116,24 +54,25 @@ void g_ModelDP(float *table_to_update,
                                0, 2,
                                /* [min_q, max_q] */
                                0, k - 1,
-                               0, d);
+                               demand_distri_idx, d);
         }
         else /* (depletion[parent] != 0) */ {
             d_StateValueUpdate(table_to_update,
                                table_for_reference,
-                               z_records, q_records,
                                dataIdx,
+                               z_records, q_records,
                                /* [min_z, max_z] */
                                z_records[parentIdx] + 1,
                                z_records[parentIdx] + 2,
                                /* [min_q, max_q] */
                                q_records[parentIdx],
                                q_records[parentIdx] + 1,
-                               0, d);
+                               demand_distri_idx, d);
         }
     }
     return;
 }       /* -----  end of global kernel g_ModelDP  ----- */
+
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  ModelDP
@@ -147,6 +86,7 @@ bool ModelDP(CommandQueue *cmd,
              SystemInfo *sysinfo,
              float *table_to_update,
              float *table_for_reference,
+             int demand_distri_idx,
              int *z, int *q){
 
     size_t level_size = pow(cmd->get_h_params("k"), cmd->get_h_params("m"));
@@ -164,6 +104,7 @@ bool ModelDP(CommandQueue *cmd,
         for (size_t i_batch = 1; i_batch < n_capacity; i_batch++) {
             g_ModelDP<<<num_blocks_used, core_size >>>(  table_to_update,
                                                          table_for_reference,
+                                                         int demand_distri_idx,
                                                          z, q,
                                                          level_size,
                                                          i_batch,

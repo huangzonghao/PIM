@@ -6,7 +6,7 @@
  *    Description:  This file contains the implementation of CommandQueue
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Mon Aug 17 09:22:39 2015
+ *       Modified:  Fri Aug 28 08:22:27 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -16,6 +16,7 @@
 #include "../include/command_queue.h"
 
 #include <fstream>
+#include <vector>
 #include <stdlib.h>
 #include <math.h>
 
@@ -146,7 +147,7 @@ CommandQueue::operator = ( CommandQueue &other ) {
  * Description:  return the pointer to the configuration strings
  *------------------------------------------------------------------------------
  */
-std::string * CommandQueue::get_config_ptr (const char * var) {
+std::string *CommandQueue::get_config_ptr (const char *var) {
     for (int i = 0; i < num_configs_; ++i){
         if (strcmp(var, config_names_[i]) == 0)
             return configs_ + i;
@@ -162,7 +163,7 @@ std::string * CommandQueue::get_config_ptr (const char * var) {
  * Description:  return the configuration attributes
  *------------------------------------------------------------------------------
  */
-const char * CommandQueue::get_config (const char * var) {
+const char *CommandQueue::get_config (const char *var) {
     if (get_config_ptr(var) == NULL){
         printf("Error: Cannot get the string of the %s.\n", var);
         return "";
@@ -177,7 +178,7 @@ const char * CommandQueue::get_config (const char * var) {
  * Description:  check whether we need to opearte certain commands
  *------------------------------------------------------------------------------
  */
-bool CommandQueue::check_command (const char * var) {
+bool CommandQueue::check_command (const char *var) {
         if( strcmp(var, "verbose") == 0)
             return verbose_enabled_;
         if( strcmp(var, "recovery") == 0)
@@ -201,9 +202,20 @@ bool CommandQueue::check_command (const char * var) {
  * Description:  return the pointer to the HostParameters
  *------------------------------------------------------------------------------
  */
-HostParameters * CommandQueue::get_host_param_pointer () {
+HostParameters *CommandQueue::get_host_param_pointer () {
     return host_params_;
 }       /* -----  end of method CommandQueue::get_host_param_pointer  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  CommandQueue
+ *      Method:  get_h_demand_pointer
+ * Description:  return the pointer to the DemandDistribution on the host
+ *------------------------------------------------------------------------------
+ */
+DemandDistribution *CommandQueue::get_h_demand_pointer (int index) {
+    return host_params_->get_distribution_ptr(index);
+}       /* -----  end of method CommandQueue::get_h_demand_pointer  ----- */
 
 /*
  *------------------------------------------------------------------------------
@@ -212,7 +224,7 @@ HostParameters * CommandQueue::get_host_param_pointer () {
  * Description:  return the value stored in HostParameters
  *------------------------------------------------------------------------------
  */
-float CommandQueue::get_h_param (const char * var) {
+float CommandQueue::get_h_param (const char *var) {
     return host_params_->get_value(var);
 }       /* -----  end of method CommandQueue::get_h_param  ----- */
 
@@ -224,7 +236,7 @@ float CommandQueue::get_h_param (const char * var) {
  * Description:  return the pointer to the DeviceParameters
  *------------------------------------------------------------------------------
  */
-DeviceParameters * CommandQueue::get_device_param_pointer () {
+DeviceParameters *CommandQueue::get_device_param_pointer () {
     return device_params_;
 }       /* -----  end of method CommandQueue::get_device_param_pointer  ----- */
 
@@ -235,7 +247,7 @@ DeviceParameters * CommandQueue::get_device_param_pointer () {
  * Description:  load the specific value to HostParameters
  *------------------------------------------------------------------------------
  */
-bool CommandQueue::load_host_params ( const char * var, float value ) {
+bool CommandQueue::load_host_params ( const char *var, float value ) {
     if (host_params_->set_param(var,value)) {
         return true;
     }
@@ -246,43 +258,58 @@ bool CommandQueue::load_host_params ( const char * var, float value ) {
  *------------------------------------------------------------------------------
  *       Class:  CommandQueue
  *      Method:  load_files
- * Description:  load the parameters from the input file
+ * Description:  load the parameters from the input file and store them to the
+ *                 host_params_
+ *                 Seems not that perfect but i don't have a better idea currently
  *------------------------------------------------------------------------------
  */
-bool CommandQueue::load_files (const char * type) {
+bool CommandQueue::load_files (const char *type) {
     if(strcmp(type, "param") == 0){
         FILE *fp = std::fopen(get_config("input_file_name"), "r");
         char readBuffer[65536];
         rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
         rapidjson::Document para;
         para.ParseStream(is);
+        /* first load the parameters */
         bool process_status = false;
         for (int i = 0; i < host_params_->get_param_num(); ++i){
-            process_status = host_params_->set_param(host_params_->pop_param_names(i),\
-                    para[host_params_->pop_param_names(i)].GetDouble());
+            process_status =
+                host_params_->set_param(i, para[host_params_->pop_param_names(i)].GetDouble());
             if (!process_status){
-                printf("Error: Failed to load parameter : %s, exit.\n",\
+                printf("Error: Failed to load parameter : %s, exit.\n",
                         host_params_->pop_param_names(i));
                 return false;
             }
         }
-        /* :TODO:Sat Aug  1 12:33:28 2015:huangzonghao:
-         *  how to get the host paramters
+        /* then load the demand distributions */
+        /* for setting the distribution, we first get the entire array and then
+         *     pass the array to the method of HostParameters
          */
-/*-----------------------------------------------------------------------------
- *  bookmark!!!!!
- *-----------------------------------------------------------------------------*/
-        /* :TODO:Fri Aug  7 13:23:42 2015:huangzonghao:
-         *  need to implemente the mulitiple distribution load in
-         *  this is currently a temp solution
-         */
-        const rapidjson::Value& demand_array = para["demand_distribution"];
-        for (int i = 0; i < host_params_->get_value("max_demand") -\
-                host_params_->get_value("min_demand"); ++i){
-            host_params_->set_distribution(0, i, demand_array[i].GetDouble());
+        int num_distri = para["num_distri"].GetInt();
+        const rapidjson::Value& demand_arrays = para["demand_distribution"];
+        size_t temp_min_demand = 0;
+        size_t temp_max_demand = 0;
+        std::vector<float> temp_array;
+        for(int i = 0; i < num_distri; ++i){
+            const rapidjson::Value& demand_array = demand_arrays[i];
+            temp_array.clear();
+            /* the first two elements of the arary is the min_demand and max_demand */
+            temp_min_demand = (size_t)demand_array[0].GetInt();
+            temp_max_demand = (size_t)demand_array[1].GetInt();
+            /* read in all the data elements */
+            for(int j = 0; j < (int)(temp_max_demand - temp_min_demand); ++j){
+                temp_array.push_back(demand_array[i + 2].GetDouble());
+            }
+            /* pass to the HostParameters */
+            process_status = host_params_->set_distribution(i, temp_array.data(), temp_min_demand, temp_max_demand);
+            if(!process_status){
+                printf("Error: something went wrong while setting the distribution.\n");
+                return false;
+            }
         }
 
         fclose(fp);
+
         return true;
     }
     printf("Error: %s is not a valid file type, exit\n", type);
@@ -302,8 +329,6 @@ bool CommandQueue::update_device_params () {
     device_params_->m            = (size_t)host_params_->get_value("m");
     device_params_->k            = (size_t)host_params_->get_value("k");
     device_params_->maxhold      = (size_t)host_params_->get_value("maxhold");
-    device_params_->max_demand   = (size_t)host_params_->get_value("max_demand");
-    device_params_->min_demand   = (size_t)host_params_->get_value("min_demand");
     device_params_->num_distri   = (size_t)host_params_->get_value("num_distri");
     device_params_->c            = host_params_->get_value("c");
     device_params_->h            = host_params_->get_value("h");
@@ -313,51 +338,48 @@ bool CommandQueue::update_device_params () {
     device_params_->alpha        = host_params_->get_value("alpha");
     device_params_->lambda       = host_params_->get_value("lambda");
 
-    device_params_->table_length = pow(host_params_->get_value("k"), host_params_->get_value("m"));
+    device_params_->table_length = (size_t)pow(host_params_->get_value("k"), host_params_->get_value("m"));
 
     /* now start to deal with the demand distribution */
-    if (demand_table_pointers.empty()){
-        // allocate the cuda memory for the distribution
-        for (int i = 0; i < (int)device_params_->num_distri; ++i){
-            demand_table_pointers.push_back(cuda_AllocateMemoryFloat(\
-                        device_params_->max_demand - device_params_->min_demand));
-        }
+    /* Note: different demand_distribution may have different length, so we allocate
+     *           device memory as we process
+     */
+    if(device_params_->demand_distributions != NULL){
+        cuda_FreeMemory(device_params_->demand_distributions);
+        device_params_->demand_distributions = NULL;
     }
-    else if ( demand_table_pointers.size() != device_params_->num_distri ){
-        /* adjust the number of pointers to what we want */
-        if ( demand_table_pointers.size() > device_params_->num_distri ){
-            for (int i = 0; i < (int)(demand_table_pointers.size() - device_params_->num_distri); ++i){
-                cuda_FreeMemory(demand_table_pointers.back());
-                demand_table_pointers.pop_back();
-            }
+    if(!demand_table_pointers.empty()){
+        /* free all the device memories in this case */
+        for(int i = 0; i < (int)device_params_->num_distri; ++i){
+            cuda_FreeMemory(demand_table_pointers[i]);
         }
-        else {
-            for (int i = 0; i < (int)(device_params_->num_distri - demand_table_pointers.size()); ++i){
-            demand_table_pointers.push_back(cuda_AllocateMemoryFloat(\
-                        device_params_->max_demand - device_params_->min_demand));
-            }
-        }
+        demand_table_pointers.clear();
     }
+    /* so now we are sure the demand_table_pointers is clean */
 
-    /* now we are sure that the numnber of cantainers and the number of distribution
-     * tables are the same
-     * now pass the distribution to the device
+    /* now start to pass the data to the device
+     * note the tables length may differ from each other
+     * the distribution on the device will also be stored as the instance of
+     *     DemandDistribution
      *
      * steps:
-     *     1) pass the distribution tables to the device
-     *     2) create the on device containers for the pointers
-     *     3) pass the pointers to the device
+     *     1) allocate the device memory for each distribution
+     *     2) pass the distribution tables to the device
+     *     3) create the on device containers for the pointers
+     *     4) pass the pointers to the device
      */
     for (int i = 0; i < (int)device_params_->num_distri; ++i){
-        cuda_PassToDevice(host_params_->get_distribution_ptr(i),\
-                          demand_table_pointers[i],\
-                          device_params_->max_demand - device_params_->min_demand);
+        demand_table_pointers.push_back(cuda_AllocateMemoryDemandDistribution(1));
+        cuda_PassToDevice(host_params_->get_distribution_ptr(i),
+                          demand_table_pointers.back(),
+                          1);
     }
     device_params_->demand_distributions =
-        cuda_AllocateMemoryFloatPtr(device_params_->num_distri);
-    for (int i = 0; i < demand_table_pointers.size(); ++i){
-        cuda_PassToDevice
-    }
+        cuda_AllocateMemoryDemandDistributionPtr(device_params_->num_distri);
+
+    cuda_PassToDevice(demand_table_pointers.data(),
+                      device_params_->demand_distributions,
+                      device_params_->num_distri);
 
     return true;
 }       /* -----  end of method CommandQueue::update_device_params  ----- */

@@ -6,7 +6,7 @@
  *    Description:  The definition of the frame function for the PIM problem
  *
  *        Created:  Thu Jul 23 01:09:07 2015
- *       Modified:  Thu Aug 27 16:00:58 2015
+ *       Modified:  Fri Aug 28 09:29:55 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -23,12 +23,15 @@
 #include "../include/frame.h"
 
 #include <cstring>
+#include <cmath>
 
 #include "../include/command_queue.h"
 #include "../include/system_info.h"
 #include "../include/models.h"
 #include "../include/model_support.h"
+#include "../include/cuda_support.h"
 #include "../include/device_parameters.h"
+#include "../include/demand_distribution.h"
 
 /*
  * ===  FUNCTION  ==============================================================
@@ -39,10 +42,12 @@
  *      @return:  whether the operation is suceessful or not
  * =============================================================================
  */
-bool LetsRock ( CommandQueue * cmd, SystemInfo * sysinfo ){
-    bool model_catch_error;
-    /* first do some command initialization such as declare two value tables */
-    float **value_tables =
+bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, float *host_value_table ){
+    /* to deal with the errors while the computation */
+    bool error_msg;
+
+    /* declare the value tables, both host and device */
+    float **device_value_tables =
         DeclareValueTable(cmd->get_device_param_pointer()->table_length, sysinfo);
 
 
@@ -53,11 +58,38 @@ bool LetsRock ( CommandQueue * cmd, SystemInfo * sysinfo ){
  *-----------------------------------------------------------------------------*/
     if( strcmp(cmd->get_config("policy"), "fluid") == 0 ||
         strcmp(cmd->get_config("policy"),  "all") == 0 ){
-        ModelFluidInit(cmd, sysinfo, value_tables[0]);
+        ModelInit(cmd, sysinfo, device_value_tables[0]);
+        /* current table is the table to update */
+        int current_table_idx = 1;
+        int distri_idx = 0;
         for ( int i_period = cmd->get_h_param("T"); i_period > 0; --i_period ){
-            ModelFluid(cmd, sysinfo, i_period);
+            if(i_period != 1){
+                ModelFluid(cmd, sysinfo,
+                           device_value_tables[current_table_idx],
+                           device_value_tables[1 - current_table_idx],
+                           distri_idx,
+                           0);
+                    current_table_idx = 1 - current_table_idx;
+            }
+            else{
+                // first calculate the expect demand for each day
+                DemandDistribution *demand = cmd->get_h_demand_pointer(distri_idx);
+                float expect_demand = 0;
+                for (int i = 0; i < (int)(demand->max_demand - demand->min_demand); ++i){
+                    expect_demand += (i + demand->min_demand) * demand->table[i];
+                }
+                ModelFluid(cmd, sysinfo,
+                           device_value_tables[current_table_idx],
+                           device_value_tables[1 - current_table_idx],
+                           distri_idx,
+                           (size_t)ceil(expect_demand));
+                // cerr << " the expected demand : " << endl << (size_t)ceil(expectDemand) << endl;
+            }
         }
+        cuda_ReadFromDevice(host_value_table, device_value_tables[1 - current_table_idx], cmd->get_device_param_pointer()->table_length);
+        printf("Model fluid has finished successfully\n");
     }
+
 /*-----------------------------------------------------------------------------
  *  the dp policy
  *-----------------------------------------------------------------------------*/
@@ -66,13 +98,18 @@ bool LetsRock ( CommandQueue * cmd, SystemInfo * sysinfo ){
         /* for dp policy we need two tabels to store the z, q information on the
          *     device
          */
-        ModelDPInit(cmd, sysinfo);
+        float *d_z_records = cuda_AllocateMemoryFloat(cmd->get_device_param_pointer()->table_length);
+        float *d_q_records = cuda_AllocateMemoryFloat(cmd->get_device_param_pointer()->table_length);
+
+        int current_table_idx = 1;
+        int distri_idx = 0;
+        ModelInit(cmd, sysinfo, device_value_tables[0]);
         for ( int i_period = cmd->get_h_param("T"); i_period > 0; --i_period ){
-            model_catch_error= ModelDP(CommandQueue *cmd,
-                                       SystemInfo *sysinfo,
-                                       table_to_update,
-                                       table_for_reference,
-                                       z, q);
+            error_msg = ModelDP( CommandQueue *cmd,
+                                 SystemInfo *sysinfo,
+                                 table_to_update,
+                                 table_for_reference,
+                                 d_z_records, d_q_records);
     }
     return true;
 }       /* -----  end of function LetsRock  ----- */

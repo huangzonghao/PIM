@@ -6,7 +6,7 @@
  *    Description:  This file contains the main workflow of the PIM project
  *
  *        Created:  Wed Jul 22 13:57:40 2015
- *       Modified:  Sun Aug  9 10:39:28 2015
+ *       Modified:  Fri Aug 28 08:42:09 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -20,11 +20,11 @@
 #include <unistd.h>
 #include <signal.h>
 #include <stdio.h>
-#include <iostream>
 #include "../include/support.h"
 #include "../include/command_queue.h"
 #include "../include/system_info.h"
 #include "../include/frame.h"
+#include "../include/device_parameters.h"
 
 /*
  * ===  FUNCTION  ==============================================================
@@ -35,7 +35,7 @@
  /* :TODO:Thu Jul 23 00:16:19 2015 00:16:huangzonghao:
   * Try to make the main function bare a combination of subfunctions
   */
-int main ( int argc, const char ** argv ) {
+int main ( int argc, const char **argv ) {
 /*-----------------------------------------------------------------------------
  *  set up the InterruptHandler
  *-----------------------------------------------------------------------------*/
@@ -46,66 +46,60 @@ int main ( int argc, const char ** argv ) {
     sigaction(SIGINT, &sigIntHandler, NULL);
 
 /*-----------------------------------------------------------------------------
- *  declare the CommandQueue
+ *  declare the administrative variables
  *-----------------------------------------------------------------------------*/
-    CommandQueue control;
+    CommandQueue cmd;
+    bool error_msg = false;
+    SystemInfo sysinfo;
+    sysinfo.check_gpu();
+
 /*-----------------------------------------------------------------------------
  *  load the system commands
  *-----------------------------------------------------------------------------*/
-    if(!LoadCommands(argc, argv, &control)){
-        printf("Failure while reading in the commands, exit");
+    error_msg = LoadCommands(argc, argv, &cmd);
+    if(!error_msg){
+        printf("Failure while reading in the commands, exit\n");
         return 1;
     }
 
     /* printusage has the early exit, so check it first */
-    if(control.check_command("print_help")){
+    if(cmd.check_command("print_help")){
         PrintUsage();
         return 0;
     }
 
 /*-----------------------------------------------------------------------------
- *  declare and check the system configuration
- *-----------------------------------------------------------------------------*/
-    SystemInfo sysinfo;
-    sysinfo.check_gpu();
-
-/*-----------------------------------------------------------------------------
  *  load the parameters
  *-----------------------------------------------------------------------------*/
-    if (!LoadParameters(&control)){
-        printf("Failure while loading the parameters, exit");
+    error_msg = LoadParameters(&cmd);
+    if(!error_msg){
+        printf("Failure while loading the parameters, exit\n");
         return 2;
     }
-    control.update_device_params();
+    cmd.update_device_params();
 /*-----------------------------------------------------------------------------
  *  start the main calculation
  *-----------------------------------------------------------------------------*/
-/* :TODO:Fri Jul 31 17:34:09 2015:huangzonghao:
- *  recovery
- *  model 1
- *  model 2
- *  .
- *  .
- *  .
- *  (note all the models shall be called by the frame function)
- *
- */
     /* start the clock */
     timeval  tv1, tv2;
+    /* declare the host value table */
+    float *host_value_table = new float[cmd.get_device_param_pointer()->table_length];
     gettimeofday(&tv1, NULL);
-/* :TODO:Sat Aug  8 12:05:19 2015:huangzonghao:
- *  something wrong with the preset parameters
- */
-    LetsRock(&control, &sysinfo);
+
+    error_msg = LetsRock(&cmd, &sysinfo, host_value_table);
+    if(!error_msg){
+        printf("Something went wrong in LetsRock\n");
+        return 3;
+    }
 
     /* end the clock */
     gettimeofday(&tv2, NULL);
-    double program_running_time = \
-                (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + \
-                (double) (tv2.tv_sec - tv1.tv_sec);
+    double program_running_time = (double) (tv2.tv_usec - tv1.tv_usec) / 1000000
+                                + (double) (tv2.tv_sec - tv1.tv_sec);
 
-    std::cout << "The total time elaspsed: " << program_running_time << std::endl;
-    return EXIT_SUCCESS;
+    printf("The total time elapsed : %f \n", program_running_time);
+
+    return 0;
 }       /* ----------  end of function main  ---------- */
 
 

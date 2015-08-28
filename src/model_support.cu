@@ -6,7 +6,7 @@
  *    Description:  The cuda supporting functions related to the algorithm
  *
  *        Created:  Sat Aug  8 15:35:08 2015
- *       Modified:  Wed Aug 26 16:28:05 2015
+ *       Modified:  Fri Aug 28 09:29:47 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -192,9 +192,46 @@ void d_StateValueUpdate( float *table_to_update,
  *  The global kernels
  * =========================================================================== */
 
+/*
+ * ===  GLOBAL KERNEL  =========================================================
+ *         Name:  g_ModelInit
+ *  Description:  the kernel to init the value table.
+ *       @param:  the DeviceParameters and the pointer to the value table
+ * =============================================================================
+ */
+__global__
+void g_ModelInit(struct DeviceParameters d, float *value_table){
+    // the total number of threads which have been assigned for this task,
+    // oneD layout everywhere
+    size_t step_size = gridDim.x * blockDim.x;
+    size_t myStartIdx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (size_t i = myStartIdx; i < d.table_length; i += step_size){
+        value_table[i] = d_check_storage(i, d.m, d.k) * d.s;
+    }
+    __syncthreads();
+    return;
+}       /* -----  end of global kernel g_ModelInit  ----- */
 /* =============================================================================
  *  The host functions
  * =========================================================================== */
+
+/*
+ * ===  FUNCTION  ==============================================================
+ *         Name:  ModelInit
+ *  Description:  to initialize the value table at the beginning of the program
+ *                  for all policies, we just sell out all the items with the
+ *                  salvage price
+ *       @param:  the CommandQueue, the SystemInfo, and the pointer to the value
+ *                   table
+ *      @return:  success or not
+ * =============================================================================
+ */
+bool ModelInit(CommandQueue *cmd, SystemInfo *sysinfo, float *value_table){
+    g_ModelInit<<<sysinfo->get_value("num_cores"), sysinfo->get_value("core_size")>>>
+                        (*(cmd->get_device_param_pointer), value_table);
+    return true;
+}       /* -----  end of function ModelInit  ----- */
 
 /*
  * ===  FUNCTION  ==============================================================
@@ -204,7 +241,7 @@ void d_StateValueUpdate( float *table_to_update,
  *      @return:  float**
  * =============================================================================
  */
-float** DeclareValueTable(size_t table_length, SystemInfo* sysinfo){
+float **DeclareValueTable(size_t table_length, SystemInfo* sysinfo){
     /* first declare the host space for the two pointers holding the two tables */
     float **temp = new float*[2];
     /* then the device memory space */
