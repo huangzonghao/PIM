@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Fri Aug 28 10:28:46 2015
+ *       Modified:  Mon Aug 31 22:12:55 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -51,6 +51,7 @@ class CommandQueue
     DeviceParameters *get_device_param_pointer();
     DemandDistribution *get_h_demand_pointer(int index);
     float get_h_param(const char *var);
+    float get_d_param(const char *var);
     const char *get_config(const char *var);
 
     bool check_command(const char *var);

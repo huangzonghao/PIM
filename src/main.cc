@@ -6,7 +6,7 @@
  *    Description:  This file contains the main workflow of the PIM project
  *
  *        Created:  Wed Jul 22 13:57:40 2015
- *       Modified:  Fri Aug 28 08:42:09 2015
+ *       Modified:  Mon Aug 31 22:53:59 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -32,9 +32,6 @@
  *  Description:
  * =============================================================================
  */
- /* :TODO:Thu Jul 23 00:16:19 2015 00:16:huangzonghao:
-  * Try to make the main function bare a combination of subfunctions
-  */
 int main ( int argc, const char **argv ) {
 /*-----------------------------------------------------------------------------
  *  set up the InterruptHandler
@@ -77,13 +74,14 @@ int main ( int argc, const char **argv ) {
         return 2;
     }
     cmd.update_device_params();
+
 /*-----------------------------------------------------------------------------
  *  start the main calculation
  *-----------------------------------------------------------------------------*/
     /* start the clock */
     timeval  tv1, tv2;
     /* declare the host value table */
-    float *host_value_table = new float[cmd.get_device_param_pointer()->table_length];
+    float *host_value_table = new float[(int)cmd.get_d_param("table_length")];
     gettimeofday(&tv1, NULL);
 
     error_msg = LetsRock(&cmd, &sysinfo, host_value_table);

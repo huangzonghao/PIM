@@ -6,7 +6,7 @@
  *    Description:  This file contains the implementation of CommandQueue
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Fri Aug 28 08:22:27 2015
+ *       Modified:  Mon Aug 31 22:51:34 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -228,6 +228,17 @@ float CommandQueue::get_h_param (const char *var) {
     return host_params_->get_value(var);
 }       /* -----  end of method CommandQueue::get_h_param  ----- */
 
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  CommandQueue
+ *      Method:  get_h_param
+ * Description:  return the value stored in HostParameters
+ *------------------------------------------------------------------------------
+ */
+float CommandQueue::get_d_param (const char *var) {
+    return GetDeviceParameterValue(*device_params_, var);
+}       /* -----  end of method CommandQueue::get_h_param  ----- */
 
 /*
  *------------------------------------------------------------------------------

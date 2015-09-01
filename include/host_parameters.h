@@ -6,7 +6,7 @@
  *    Description:  The definition of HostParameters
  *
  *        Created:  Tue Jul 28 14:54:25 2015
- *       Modified:  Fri Aug 28 05:49:42 2015
+ *       Modified:  Mon Aug 31 00:32:48 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -95,6 +95,8 @@ class HostParameters
     */
 
     const int num_params_ = 12;
+
+    /* the following is a c++11 feature, so the compiler support is required */
     const char *param_names_[12] = { "T",
                                      "m",
                                      "k",

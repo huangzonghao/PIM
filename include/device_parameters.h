@@ -6,7 +6,7 @@
  *    Description:  The definition of DeviceParameters
  *
  *        Created:  Tue Jul 28 14:56:03 2015
- *       Modified:  Fri Aug 28 07:03:17 2015
+ *       Modified:  Mon Aug 31 22:31:03 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -17,6 +17,8 @@
 #define DEVICE_PARAMETERS_H_
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <cstring>
 struct DemandDistribution;
 
 struct DeviceParameters{
@@ -41,6 +43,58 @@ struct DeviceParameters{
     DemandDistribution **demand_distributions;
 };
 
+/*
+ * ===  INL-FUNCTION  ==========================================================
+ *         Name:  GetDeviceParameterValue
+ *  Description:  return the value of the corresponding parameters stored in
+ *                  DeviceParameters, the return type is float for convenience
+ *       @param:  variable name
+ *      @return:  float value
+ * =============================================================================
+ */
+inline float GetDeviceParameterValue(DeviceParameters &d, const char *var){
+    if(strcmp(var, "T") == 0){
+        return d.T;
+    }
+    if(strcmp(var, "m") == 0){
+        return d.m;
+    }
+    if(strcmp(var, "k") == 0){
+        return d.k;
+    }
+    if(strcmp(var, "maxhold") == 0){
+        return d.maxhold ;
+    }
+    if(strcmp(var, "num_distri") == 0){
+        return d.num_distri;
+    }
+    if(strcmp(var, "table_length") == 0){
+        return d.table_length;
+    }
+    if(strcmp(var,  "c") == 0){
+        return d.c;
+    }
+    if(strcmp(var,  "h") == 0){
+        return d.h;
+    }
+    if(strcmp(var,  "theta") == 0){
+        return d.theta;
+    }
+    if(strcmp(var,  "r") == 0){
+        return d.r;
+    }
+    if(strcmp(var,  "s") == 0){
+        return d.s;
+    }
+    if(strcmp(var,  "alpha") == 0){
+        return d.alpha;
+    }
+    if(strcmp(var,  "lambda") == 0){
+        return d.lambda;
+    }
+    printf("Error: there is no variable named %s\n", var);
+    return 0;
+}       /* -----  end of inline function GetDeviceParameterValue  ----- */
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  CopyDeviceParameters
