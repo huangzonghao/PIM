@@ -7,7 +7,7 @@
  *                    algorithm
  *
  *        Created:  Fri Aug  7 23:47:24 2015
- *       Modified:  Fri Aug 28 09:53:36 2015
+ *       Modified:  Fri Aug 28 10:58:14 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -16,7 +16,11 @@
  */
 #include "../include/models.h"
 #include "../include/model_support.h"
+#include "../include/model_support.cuh"
 #include "../include/demand_distribution.h"
+#include "../include/device_parameters.h"
+#include "../include/command_queue.h"
+#include "../include/system_info.h"
 
 /*
  * ===  GLOBAL KERNEL  =========================================================
@@ -35,7 +39,7 @@ void g_ModelDP(float *table_to_update,
                int *z_records,
                int *q_records,
                size_t level_size,
-               size_t batchIdx,
+               size_t batch_idx,
                DeviceParameters d){
 
     size_t myIdx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -45,7 +49,7 @@ void g_ModelDP(float *table_to_update,
         size_t dataIdx = batch_idx * level_size + myIdx;
         size_t parentIdx = dataIdx - level_size;
 
-        if (current == 0 || depletion[parent] == 0) {
+        if (dataIdx == 0 || z_records[parentIdx] == 0) {
             d_StateValueUpdate(table_to_update,
                                table_for_reference,
                                dataIdx,
@@ -53,7 +57,7 @@ void g_ModelDP(float *table_to_update,
                                /* [min_z, max_z] */
                                0, 2,
                                /* [min_q, max_q] */
-                               0, k - 1,
+                               0, d.k - 1,
                                demand_distri_idx, d);
         }
         else /* (depletion[parent] != 0) */ {
@@ -89,23 +93,24 @@ bool ModelDP(CommandQueue *cmd,
              int demand_distri_idx,
              int *z, int *q){
 
-    size_t level_size = pow(cmd->get_h_params("k"), cmd->get_h_params("m"));
+    size_t level_size = pow(cmd->get_h_param("k"), cmd->get_h_param("m"));
     // The very first state 0,0,...,0
     g_ModelDP<<<1, 1>>>(  table_to_update,
                           table_for_reference,
+                          demand_distri_idx,
                           z, q,
                           1, 0,
                           *(cmd->get_device_param_pointer) );
 
     size_t num_blocks_used;
     size_t core_size = sysinfo->get_value("core_size");
-    for (size_t i_level = 0; i_level < cmd->get_h_params("m"); ++i_level) {
-        num_blocks_used = i_level * cmd->get_h_params("k");
-        level_size = pow(cmd->get_h_params("k"), i_level);
-        for (size_t i_batch = 1; i_batch < n_capacity; i_batch++) {
+    for (size_t i_level = 0; i_level < cmd->get_h_param("m"); ++i_level) {
+        num_blocks_used = i_level * cmd->get_h_param("k");
+        level_size = pow(cmd->get_h_param("k"), i_level);
+        for (size_t i_batch = 1; i_batch < cmd->get_h_param("k"); i_batch++) {
             g_ModelDP<<<num_blocks_used, core_size >>>(  table_to_update,
                                                          table_for_reference,
-                                                         int demand_distri_idx,
+                                                         demand_distri_idx,
                                                          z, q,
                                                          level_size,
                                                          i_batch,
