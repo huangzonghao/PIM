@@ -44,3 +44,6 @@ Fri Aug 28 02:59:00 2015
 For the options I think it would be much better if we use the defined macros in
 the header file instead of just simple strings!!!! After all, all those strings
 are just for coding convenience
+
+Sat Sep  5 16:59:45 2015
+The recover mode shall be paralell with the model init part

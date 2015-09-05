@@ -6,7 +6,7 @@
  *    Description:  All the functions to compute the fluid policy
  *
  *        Created:  Fri Aug  7 23:34:03 2015
- *       Modified:  Fri Aug 28 10:23:00 2015
+ *       Modified:  Fri Aug 28 10:47:56 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -44,36 +44,37 @@ void g_ModelFluid(struct DeviceParameters d,
                   size_t batch_idx ){
 
     // this is both the thread index and the data index in this batch
-    size_t myIdx = blockIdx.x * blockDim.x + threadIdx.x;
-    size_t dataIdx = myIdx + batch_idx * gridDim.x * blockDim.x;
-
-    /* because we may use more threads than needed */
-    if(dataIdx < d.table_length){
-        if(depletion_indicator){ // the last day
-            d_StateValueUpdate( table_to_update,
-                                table_for_reference,
-                                dataIdx,
-                                NULL, NULL,
-                                /* [min_z, max_z] */
-                                depletion_indicator * d.T, depletion_indicator * d.T,
-                                /* [min_q, max_q] */
-                                0, d.k - 1,
-                                demand_distri_idx, /* the index of the demand distribution */
-                                d);
-        }
-        else{
-            d_StateValueUpdate( table_to_update,
-                                table_for_reference,
-                                dataIdx,
-                                NULL, NULL,
-                                /* [min_z, max_z] */
-                                0, 0,
-                                /* [min_q, max_q] */
-                                0, d.k - 1,
-                                demand_distri_idx, /* the index of the demand distribution */
-                                d);
-        }
-    }
+/*     size_t myIdx = blockIdx.x * blockDim.x + threadIdx.x;
+ *     size_t dataIdx = myIdx + batch_idx * gridDim.x * blockDim.x;
+ * 
+ *     [> because we may use more threads than needed <]
+ *     if(dataIdx < d.table_length){
+ *         if(depletion_indicator){ // the last day
+ *             d_StateValueUpdate( table_to_update,
+ *                                 table_for_reference,
+ *                                 dataIdx,
+ *                                 NULL, NULL,
+ *                                 [> [min_z, max_z] <]
+ *                                 depletion_indicator * d.T, depletion_indicator * d.T,
+ *                                 [> [min_q, max_q] <]
+ *                                 0, d.k - 1,
+ *                                 demand_distri_idx, [> the index of the demand distribution <]
+ *                                 d);
+ *         }
+ *         else{
+ *             d_StateValueUpdate( table_to_update,
+ *                                 table_for_reference,
+ *                                 dataIdx,
+ *                                 NULL, NULL,
+ *                                 [> [min_z, max_z] <]
+ *                                 0, 0,
+ *                                 [> [min_q, max_q] <]
+ *                                 0, d.k - 1,
+ *                                 demand_distri_idx, [> the index of the demand distribution <]
+ *                                 d);
+ *         }
+ *     }
+ */
     return;
 }       /* -----  end of global kernel g_ModelFluid  ----- */
 
@@ -95,20 +96,21 @@ bool ModelFluid(CommandQueue *cmd,
                 size_t depletion_indicator){
 
     // each thread will take care of a state at once
-    size_t batch_amount = cmd->get_device_param_pointer()->table_length
-                        / sysinfo->get_value("num_cores")
-                        / sysinfo->get_value("core_size") + 1;
-
-    for ( size_t i = 0; i < batch_amount; ++i){
-        g_ModelFluid
-            <<<sysinfo->get_value("num_cores"), sysinfo->get_value("core_size")>>>
-            (*(cmd->get_device_param_pointer()),
-             table_to_update,
-             table_for_reference,
-             demand_distri_idx,
-             depletion_indicator,
-             i);
-    }
+/*     size_t batch_amount = cmd->get_device_param_pointer()->table_length
+ *                         / sysinfo->get_value("num_cores")
+ *                         / sysinfo->get_value("core_size") + 1;
+ * 
+ *     for ( size_t i = 0; i < batch_amount; ++i){
+ *         g_ModelFluid
+ *             <<<sysinfo->get_value("num_cores"), sysinfo->get_value("core_size")>>>
+ *             (*(cmd->get_device_param_pointer()),
+ *              table_to_update,
+ *              table_for_reference,
+ *              demand_distri_idx,
+ *              depletion_indicator,
+ *              i);
+ *     }
+ */
     return true;
 }       /* -----  end of function ModelFluid  ----- */
 

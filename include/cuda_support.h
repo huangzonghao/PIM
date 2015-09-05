@@ -9,7 +9,7 @@
  *                    cuda_support-ker.h
  *
  *        Created:  Thu Jul 23 03:40:09 2015
- *       Modified:  Fri Aug 28 07:55:11 2015
+ *       Modified:  Sat Sep  5 10:55:48 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -61,8 +61,9 @@ void cuda_ReadFromDevice ( const size_t *h_array,
 /*-----------------------------------------------------------------------------
  *  allocate memory
  *-----------------------------------------------------------------------------*/
-float* cuda_AllocateMemoryFloat(int length);
-float** cuda_AllocateMemoryFloatPtr(int length);
+float *cuda_AllocateMemoryFloat(int length);
+int *cuda_AllocateMemoryInt(int length);
+float **cuda_AllocateMemoryFloatPtr(int length);
 DemandDistribution *cuda_AllocateMemoryDemandDistribution(size_t length);
 DemandDistribution **cuda_AllocateMemoryDemandDistributionPtr(size_t length);
 

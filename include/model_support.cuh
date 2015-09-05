@@ -42,7 +42,7 @@ void d_StateValueUpdate( float *table_to_update,
                          int min_q,
                          int max_q,
                          int demand_distri_idx,
-                         DeviceParameters &d );
+                         struct DeviceParameters &d );
 
 #endif   /* ----- #ifndef MODEL_SUPPORT_H_  ----- */
 /* =============================================================================

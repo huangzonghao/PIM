@@ -6,7 +6,7 @@
  *    Description:  This file contains the main workflow of the PIM project
  *
  *        Created:  Wed Jul 22 13:57:40 2015
- *       Modified:  Mon Aug 31 22:53:59 2015
+ *       Modified:  Sat Sep  5 14:46:23 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <stdio.h>
+#include <vector>
 #include "../include/support.h"
 #include "../include/command_queue.h"
 #include "../include/system_info.h"
@@ -29,7 +30,6 @@
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  main
- *  Description:
  * =============================================================================
  */
 int main ( int argc, const char **argv ) {
@@ -81,10 +81,15 @@ int main ( int argc, const char **argv ) {
     /* start the clock */
     timeval  tv1, tv2;
     /* declare the host value table */
-    float *host_value_table = new float[(int)cmd.get_d_param("table_length")];
+    std::vector<float*> host_value_tables;
+    /* the container will be filled in the frame function
+     *     and the size of the vector will be decided by the number of policies
+     *     enabled
+     */
+
     gettimeofday(&tv1, NULL);
 
-    error_msg = LetsRock(&cmd, &sysinfo, host_value_table);
+    error_msg = LetsRock(&cmd, &sysinfo, host_value_tables);
     if(!error_msg){
         printf("Something went wrong in LetsRock\n");
         return 3;
@@ -95,8 +100,20 @@ int main ( int argc, const char **argv ) {
     double program_running_time = (double) (tv2.tv_usec - tv1.tv_usec) / 1000000
                                 + (double) (tv2.tv_sec - tv1.tv_sec);
 
-    printf("The total time elapsed : %f \n", program_running_time);
+/*-----------------------------------------------------------------------------
+ *  some post process
+ *-----------------------------------------------------------------------------*/
 
+    /* 1. write the output
+     * 2. print the status of the task
+     */
+    printf("The total time elapsed : %f \n", program_running_time);
+    error_msg = WriteOutputFile(host_value_tables[0],
+                                cmd.get_d_param("table_length"),
+                                1,//output format
+                                cmd.get_config("output_format"));
+
+    printf("Success: the program finished successfully!\n");
     return 0;
 }       /* ----------  end of function main  ---------- */
 

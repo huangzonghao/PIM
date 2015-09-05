@@ -9,7 +9,7 @@
  *                    Mostly the interface for other cpp source file
  *
  *        Created:  Thu Jul 23 03:38:40 2015
- *       Modified:  Fri Aug 28 07:11:13 2015
+ *       Modified:  Sat Sep  5 10:55:08 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -101,22 +101,22 @@ void cuda_PassToDevice ( const size_t *h_array,
 }       /* -----  end of function cuda_PassToDevice  ----- */
 
 /* reload */
-void cuda_PassToDevice ( const DemandDistribution *h_array,
-                         const DemandDistribution *d_array,
+void cuda_PassToDevice ( const struct DemandDistribution *h_array,
+                         const struct DemandDistribution *d_array,
                          size_t length ){
 
     checkCudaErrors(cudaMemcpy(d_array, h_array,
-                               length * sizeof(DemandDistribution),
+                               length * sizeof(struct DemandDistribution),
                                cudaMemcpyHostToDevice));
     return;
 }       /* -----  end of function cuda_PassToDevice  ----- */
 
-void cuda_PassToDevice ( const DemandDistribution **h_array,
-                         const DemandDistribution **d_array,
+void cuda_PassToDevice ( const struct DemandDistribution **h_array,
+                         const struct DemandDistribution **d_array,
                          size_t length ){
 
     checkCudaErrors(cudaMemcpy(d_array, h_array,
-                               length * sizeof(DemandDistribution*),
+                               length * sizeof(struct DemandDistribution*),
                                cudaMemcpyHostToDevice));
     return;
 }       /* -----  end of function cuda_PassToDevice  ----- */
@@ -168,21 +168,28 @@ float *cuda_AllocateMemoryFloat(size_t length){
     return temp;
 }       /* -----  end of function cuda_AllocateMemoryFLoat  ----- */
 
+
+int *cuda_AllocateMemoryInt(size_t length){
+    int *temp;
+    checkCudaErrors(cudaMalloc(&temp, length * sizeof(int)));
+    return temp;
+}
+
 float **cuda_AllocateMemoryFloatPtr(size_t length){
     float **temp;
     checkCudaErrors(cudaMalloc(&temp, length * sizeof(float*)));
     return temp;
 }
 
-DemandDistribution *cuda_AllocateMemoryDemandDistribution(size_t length){
-    DemandDistribution *temp;
-    checkCudaErrors(cudaMalloc(&temp, length * sizeof(DemandDistribution)));
+struct DemandDistribution *cuda_AllocateMemoryDemandDistribution(size_t length){
+    struct DemandDistribution *temp;
+    checkCudaErrors(cudaMalloc(&temp, length * sizeof(struct DemandDistribution)));
     return temp;
 }
 
-DemandDistribution **cuda_AllocateMemoryDemandDistributionPtr(size_t length){
-    DemandDistribution **temp;
-    checkCudaErrors(cudaMalloc(&temp, length * sizeof(DemandDistribution*)));
+struct DemandDistribution **cuda_AllocateMemoryDemandDistributionPtr(size_t length){
+    struct DemandDistribution **temp;
+    checkCudaErrors(cudaMalloc(&temp, length * sizeof(struct DemandDistribution*)));
     return temp;
 }
 
@@ -217,12 +224,12 @@ void cuda_FreeMemory(float **ptr){
     return;
 }
 
-void cuda_FreeMemory(DemandDistribution *ptr){
+void cuda_FreeMemory(struct DemandDistribution *ptr){
     checkCudaErrors(cudaFree(ptr));
     return;
 }
 
-void cuda_FreeMemory(DemandDistribution **ptr){
+void cuda_FreeMemory(struct DemandDistribution **ptr){
     checkCudaErrors(cudaFree(ptr));
     return;
 }

@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Mon Aug 31 22:12:55 2015
+ *       Modified:  Sat Sep  5 11:56:32 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -49,7 +49,7 @@ class CommandQueue
     /* =========================   ACCESSORS   =============================== */
     HostParameters *get_host_param_pointer();
     DeviceParameters *get_device_param_pointer();
-    DemandDistribution *get_h_demand_pointer(int index);
+    struct DemandDistribution *get_h_demand_pointer(int index);
     float get_h_param(const char *var);
     float get_d_param(const char *var);
     const char *get_config(const char *var);
@@ -116,12 +116,12 @@ class CommandQueue
 }; /* -----  end of class CommandQueue  ----- */
 
 const char *CommandQueue::config_names_[7] = {"input_file_name",
-                                "output_file_name",
-                                "output_format",
-                                "policy",
-                                "recovery_file_name",
-                                "recording_file_name",
-                                "logging_file_name"};
+                                              "output_file_name",
+                                              "output_format",
+                                              "policy",
+                                              "recovery_file_name",
+                                              "recording_file_name",
+                                              "logging_file_name"};
 
 
 

@@ -6,7 +6,7 @@
  *    Description:  This file contains the implementation of CommandQueue
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Mon Aug 31 22:51:34 2015
+ *       Modified:  Sat Sep  5 11:45:05 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -213,7 +213,7 @@ HostParameters *CommandQueue::get_host_param_pointer () {
  * Description:  return the pointer to the DemandDistribution on the host
  *------------------------------------------------------------------------------
  */
-DemandDistribution *CommandQueue::get_h_demand_pointer (int index) {
+struct DemandDistribution *CommandQueue::get_h_demand_pointer (int index) {
     return host_params_->get_distribution_ptr(index);
 }       /* -----  end of method CommandQueue::get_h_demand_pointer  ----- */
 
