@@ -14,8 +14,8 @@
  *
  * =============================================================================
  */
-#ifndef MODEL_SUPPORT_H_
-#define MODEL_SUPPORT_H_
+#ifndef MODEL_SUPPORT_CUH_
+#define MODEL_SUPPORT_CUH_
 __device__
 void d_DepleteStorage(int *mD_index, size_t deplete_amount, size_t m);
 
@@ -29,7 +29,7 @@ float d_StateValue(float *last_table,
                    int z,
                    int q,
                    int demand_table_idx,
-                   struct DeviceParameters &d);
+                   struct DeviceParameters *d);
 
 __device__
 void d_StateValueUpdate( float *table_to_update,
@@ -42,9 +42,9 @@ void d_StateValueUpdate( float *table_to_update,
                          int min_q,
                          int max_q,
                          int demand_distri_idx,
-                         struct DeviceParameters &d );
+                         struct DeviceParameters *d );
 
-#endif   /* ----- #ifndef MODEL_SUPPORT_H_  ----- */
+#endif   /* ----- #ifndef MODEL_SUPPORT_CUH_  ----- */
 /* =============================================================================
  *                         end of file model_support.cuh
  * =============================================================================

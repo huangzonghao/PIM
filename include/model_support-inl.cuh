@@ -22,7 +22,7 @@
 #include "../thirdparty/nvidia/helper_cuda.h"
 
 __device__ inline
-size_t d_decode (size_t oneDIdx, size_t m, size_t k, size_t* mDIdx){
+size_t d_decode (size_t oneDIdx, size_t m, size_t k, int *mDIdx){
     size_t sum  = 0;
     size_t temp = 0;
     for( size_t i = 0; i < m ; ++i){
@@ -35,7 +35,7 @@ size_t d_decode (size_t oneDIdx, size_t m, size_t k, size_t* mDIdx){
 }
 
 __device__ inline
-size_t d_check_storage(size_t* mDarray, size_t m){
+size_t d_check_storage(int *mDarray, size_t m){
     size_t result = 0;
     for (size_t i = 0; i < m ; ++i ){
             result += mDarray[i];

@@ -7,7 +7,7 @@
  *                    algorithm
  *
  *        Created:  Fri Aug  7 23:47:24 2015
- *       Modified:  Fri Aug 28 10:58:14 2015
+ *       Modified:  Mon 07 Sep 2015 10:45:52 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -58,7 +58,7 @@ void g_ModelDP(float *table_to_update,
                                0, 2,
                                /* [min_q, max_q] */
                                0, d.k - 1,
-                               demand_distri_idx, d);
+                               demand_distri_idx, &d);
         }
         else /* (depletion[parent] != 0) */ {
             d_StateValueUpdate(table_to_update,
@@ -71,7 +71,7 @@ void g_ModelDP(float *table_to_update,
                                /* [min_q, max_q] */
                                q_records[parentIdx],
                                q_records[parentIdx] + 1,
-                               demand_distri_idx, d);
+                               demand_distri_idx, &d);
         }
     }
     return;
@@ -100,7 +100,7 @@ bool ModelDP(CommandQueue *cmd,
                           demand_distri_idx,
                           z, q,
                           1, 0,
-                          *(cmd->get_device_param_pointer) );
+                          cmd->get_device_param_struct());
 
     size_t num_blocks_used;
     size_t core_size = sysinfo->get_value("core_size");
@@ -114,7 +114,7 @@ bool ModelDP(CommandQueue *cmd,
                                                          z, q,
                                                          level_size,
                                                          i_batch,
-                                                         *(cmd->get_device_param_pointer) );
+                                                         cmd->get_device_param_struct());
         }
     }
     return true;

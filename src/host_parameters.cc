@@ -6,7 +6,7 @@
  *    Description:  The implementation of HostParameters
  *
  *        Created:  Tue Jul 28 14:58:27 2015
- *       Modified:  Fri Aug 28 05:48:57 2015
+ *       Modified:  Mon 07 Sep 2015 03:10:08 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -29,8 +29,10 @@
  * Description:  constructor
  *------------------------------------------------------------------------------
  */
-HostParameters::HostParameters () {
+HostParameters::HostParameters(): num_params_(NUM_PARAMS){
+
     for (int i = 0; i < num_params_; ++i){
+        strcpy(param_names_[i], PARAM_NAMES[i]);
         params_[i] = 0;
     }
 }  /* -----  end of method HostParameters::HostParameters  (constructor)  ----- */
@@ -42,14 +44,16 @@ HostParameters::HostParameters () {
  * Description:  copy constructor
  *------------------------------------------------------------------------------
  */
-HostParameters::HostParameters ( const HostParameters &other ) {
-    if (this != &other) {
-        for (int i = 0; i < num_params_; ++i){
-            params_[i] = other.params_[i];
-        }
-        demand_distributions_ = other.demand_distributions_;
-    }
-}  /* -----  end of method HostParameters::HostParameters  (copy constructor)  ----- */
+/*
+ * HostParameters::HostParameters ( const HostParameters &other ) {
+ *     if (this != &other) {
+ *         for (int i = 0; i < num_params_; ++i){
+ *             params_[i] = other.params_[i];
+ *         }
+ *         demand_distributions_ = other.demand_distributions_;
+ *     }
+ * }  [> -----  end of method HostParameters::HostParameters  (copy constructor)  ----- <]
+ */
 
 
 /*
@@ -59,16 +63,18 @@ HostParameters::HostParameters ( const HostParameters &other ) {
  * Description:  assignment operator
  *------------------------------------------------------------------------------
  */
-HostParameters&
-HostParameters::operator = ( const HostParameters &other ) {
-    if ( this != &other ) {
-        for (int i = 0; i < num_params_; ++i){
-            params_[i] = other.params_[i];
-        }
-        demand_distributions_ = other.demand_distributions_;
-    }
-    return *this;
-}
+/*
+ * HostParameters&
+ * HostParameters::operator = ( const HostParameters &other ) {
+ *     if ( this != &other ) {
+ *         for (int i = 0; i < num_params_; ++i){
+ *             params_[i] = other.params_[i];
+ *         }
+ *         demand_distributions_ = other.demand_distributions_;
+ *     }
+ *     return *this;
+ * }
+ */
 
 /* reload to get the values from cuda device directly */
 /* HostParameters&

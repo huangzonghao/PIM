@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Sat Sep  5 11:56:32 2015
+ *       Modified:  Sat 05 Sep 2015 05:32:01 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -49,6 +49,7 @@ class CommandQueue
     /* =========================   ACCESSORS   =============================== */
     HostParameters *get_host_param_pointer();
     DeviceParameters *get_device_param_pointer();
+    DeviceParameters get_device_param_struct();
     struct DemandDistribution *get_h_demand_pointer(int index);
     float get_h_param(const char *var);
     float get_d_param(const char *var);

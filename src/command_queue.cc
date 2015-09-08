@@ -6,7 +6,7 @@
  *    Description:  This file contains the implementation of CommandQueue
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Sat Sep  5 11:45:05 2015
+ *       Modified:  Mon 07 Sep 2015 10:32:38 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -243,6 +243,17 @@ float CommandQueue::get_d_param (const char *var) {
 /*
  *------------------------------------------------------------------------------
  *       Class:  CommandQueue
+ *      Method:  get_device_param_struct
+ * Description:  return the full structure of the device parameters
+ *------------------------------------------------------------------------------
+ */
+DeviceParameters CommandQueue::get_device_param_struct(){
+    return *device_params_;
+}       /* -----  end of method CommandQueue::get_device_param_struct  ----- */
+
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  CommandQueue
  *      Method:  get_device_param_pointer
  * Description:  return the pointer to the DeviceParameters
  *------------------------------------------------------------------------------
@@ -336,18 +347,18 @@ bool CommandQueue::load_files (const char *type) {
  *------------------------------------------------------------------------------
  */
 bool CommandQueue::update_device_params () {
-    device_params_->T            = (size_t)host_params_->get_value("T");
-    device_params_->m            = (size_t)host_params_->get_value("m");
-    device_params_->k            = (size_t)host_params_->get_value("k");
-    device_params_->maxhold      = (size_t)host_params_->get_value("maxhold");
-    device_params_->num_distri   = (size_t)host_params_->get_value("num_distri");
-    device_params_->c            = host_params_->get_value("c");
-    device_params_->h            = host_params_->get_value("h");
-    device_params_->theta        = host_params_->get_value("theta");
-    device_params_->r            = host_params_->get_value("r");
-    device_params_->s            = host_params_->get_value("s");
-    device_params_->alpha        = host_params_->get_value("alpha");
-    device_params_->lambda       = host_params_->get_value("lambda");
+    device_params_->T          = (size_t)host_params_->get_value("T");
+    device_params_->m          = (size_t)host_params_->get_value("m");
+    device_params_->k          = (size_t)host_params_->get_value("k");
+    device_params_->maxhold    = (size_t)host_params_->get_value("maxhold");
+    device_params_->num_distri = (size_t)host_params_->get_value("num_distri");
+    device_params_->c          =         host_params_->get_value("c");
+    device_params_->h          =         host_params_->get_value("h");
+    device_params_->theta      =         host_params_->get_value("theta");
+    device_params_->r          =         host_params_->get_value("r");
+    device_params_->s          =         host_params_->get_value("s");
+    device_params_->alpha      =         host_params_->get_value("alpha");
+    device_params_->lambda     =         host_params_->get_value("lambda");
 
     device_params_->table_length = (size_t)pow(host_params_->get_value("k"), host_params_->get_value("m"));
 

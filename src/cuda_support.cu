@@ -9,7 +9,7 @@
  *                    Mostly the interface for other cpp source file
  *
  *        Created:  Thu Jul 23 03:38:40 2015
- *       Modified:  Sat Sep  5 10:55:08 2015
+ *       Modified:  Mon 07 Sep 2015 02:19:06 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -50,7 +50,7 @@ __global__
 void g_ZeroizeMemoryFloat(float *array, size_t length){
     size_t step_size = gridDim.x * blockDim.x;
     size_t myStartIdx = blockDim.x * blockIdx.x + threadIdx.x;
-    for (size_t i = myStartIdx; i < arrayLength; i += step_size)
+    for (size_t i = myStartIdx; i < length; i += step_size)
         array[i] = 0;
 
     __syncthreads();
@@ -68,8 +68,8 @@ void g_ZeroizeMemoryFloat(float *array, size_t length){
  *      @return:  void
  * =============================================================================
  */
-void cuda_PassToDevice ( const float *h_array,
-                         const float *d_array,
+void cuda_PassToDevice ( float *h_array,
+                         float *d_array,
                          size_t length ){
 
     checkCudaErrors(cudaMemcpy(d_array, h_array,
@@ -79,8 +79,8 @@ void cuda_PassToDevice ( const float *h_array,
 }       /* -----  end of function cuda_PassToDevice  ----- */
 
 /* reload */
-void cuda_PassToDevice ( const float **h_array,
-                         const float **d_array,
+void cuda_PassToDevice ( float **h_array,
+                         float **d_array,
                          size_t length ){
 
     checkCudaErrors(cudaMemcpy(d_array, h_array,
@@ -90,8 +90,8 @@ void cuda_PassToDevice ( const float **h_array,
 }       /* -----  end of function cuda_PassToDevice  ----- */
 
 /* reload */
-void cuda_PassToDevice ( const size_t *h_array,
-                         const size_t *d_array,
+void cuda_PassToDevice ( size_t *h_array,
+                         size_t *d_array,
                          size_t length ){
 
     checkCudaErrors(cudaMemcpy(d_array, h_array,
@@ -101,8 +101,8 @@ void cuda_PassToDevice ( const size_t *h_array,
 }       /* -----  end of function cuda_PassToDevice  ----- */
 
 /* reload */
-void cuda_PassToDevice ( const struct DemandDistribution *h_array,
-                         const struct DemandDistribution *d_array,
+void cuda_PassToDevice ( struct DemandDistribution *h_array,
+                         struct DemandDistribution *d_array,
                          size_t length ){
 
     checkCudaErrors(cudaMemcpy(d_array, h_array,
@@ -111,8 +111,8 @@ void cuda_PassToDevice ( const struct DemandDistribution *h_array,
     return;
 }       /* -----  end of function cuda_PassToDevice  ----- */
 
-void cuda_PassToDevice ( const struct DemandDistribution **h_array,
-                         const struct DemandDistribution **d_array,
+void cuda_PassToDevice ( struct DemandDistribution **h_array,
+                         struct DemandDistribution **d_array,
                          size_t length ){
 
     checkCudaErrors(cudaMemcpy(d_array, h_array,
@@ -129,8 +129,8 @@ void cuda_PassToDevice ( const struct DemandDistribution **h_array,
  *      @return:  see pass_to_array
  * =============================================================================
  */
-void cuda_ReadFromDevice ( const float *h_array,
-                           const float *d_array,
+void cuda_ReadFromDevice ( float *h_array,
+                           float *d_array,
                            size_t length ){
 
     checkCudaErrors(cudaMemcpy(h_array, d_array,
@@ -141,8 +141,8 @@ void cuda_ReadFromDevice ( const float *h_array,
 }       /* -----  end of function cuda_ReadFromDevice  ----- */
 
 /* reload */
-void cuda_ReadFromDevice ( const size_t *h_array,
-                           const size_t * d_array,
+void cuda_ReadFromDevice ( size_t *h_array,
+                           size_t * d_array,
                            size_t length ){
 
     checkCudaErrors(cudaMemcpy(h_array, d_array,
@@ -201,10 +201,12 @@ struct DemandDistribution **cuda_AllocateMemoryDemandDistributionPtr(size_t leng
  *      @return:  success or not
  * =============================================================================
  */
-bool cuda_ZeroizeMemoryFloat(float *array, size_t length){
-    <+body+>
-        return <+return value+>;
-}       /* -----  end of function cuda_ZeroizeMemoryFloat  ----- */
+/*
+ * bool cuda_ZeroizeMemoryFloat(float *array, size_t length){
+ *     <+body+>
+ *         return <+return value+>;
+ * }       [> -----  end of function cuda_ZeroizeMemoryFloat  ----- <]
+ */
 
 /*
  * ===  FUNCTION  ==============================================================
@@ -245,7 +247,7 @@ void cuda_FreeMemory(struct DemandDistribution **ptr){
  * =============================================================================
  */
 bool cuda_CheckGPU(int *num_devices, int *num_cores, int *core_size){
-    cudaGetDeviceCount(*num_devices);
+    cudaGetDeviceCount(num_devices);
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, 0);
     *num_cores = _ConvertSMVer2Cores(deviceProp.major, deviceProp.minor) *\
