@@ -9,7 +9,7 @@
  *                    cuda_support-ker.h
  *
  *        Created:  Thu Jul 23 03:40:09 2015
- *       Modified:  Sat Sep  5 10:55:48 2015
+ *       Modified:  Thu 10 Sep 2015 11:45:02 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -27,43 +27,43 @@ struct DemandDistribution;
 /*-----------------------------------------------------------------------------
  *  pass to device
  *-----------------------------------------------------------------------------*/
-void cuda_PassToDevice ( const float *h_array,
-                         const float *d_array,
+void cuda_PassToDevice ( float *h_array,
+                         float *d_array,
                          size_t length );
 
-void cuda_PassToDevice ( const float **h_array,
-                         const float **d_array,
+void cuda_PassToDevice ( float **h_array,
+                         float **d_array,
                          size_t length );
 
-void cuda_PassToDevice ( const size_t *h_array,
-                         const size_t *d_array,
+void cuda_PassToDevice ( size_t *h_array,
+                         size_t *d_array,
                          size_t length );
 
-void cuda_PassToDevice ( const DemandDistribution *h_array,
-                         const DemandDistribution *d_array,
+void cuda_PassToDevice ( struct DemandDistribution *h_array,
+                         struct DemandDistribution *d_array,
                          size_t length );
 
-void cuda_PassToDevice ( DemandDistribution **h_array,
-                         DemandDistribution **d_array,
+void cuda_PassToDevice ( struct DemandDistribution **h_array,
+                         struct DemandDistribution **d_array,
                          size_t length );
 
 /*-----------------------------------------------------------------------------
  *  read from device
  *-----------------------------------------------------------------------------*/
-void cuda_ReadFromDevice ( const float *h_array,
-                           const float *d_array,
+void cuda_ReadFromDevice ( float *h_array,
+                           float *d_array,
                            size_t length );
 
-void cuda_ReadFromDevice ( const size_t *h_array,
-                           const size_t *d_array,
+void cuda_ReadFromDevice ( size_t *h_array,
+                           size_t *d_array,
                            size_t length );
 
 /*-----------------------------------------------------------------------------
  *  allocate memory
  *-----------------------------------------------------------------------------*/
-float *cuda_AllocateMemoryFloat(int length);
-int *cuda_AllocateMemoryInt(int length);
-float **cuda_AllocateMemoryFloatPtr(int length);
+float *cuda_AllocateMemoryFloat(size_t length);
+int *cuda_AllocateMemoryInt(size_t length);
+float **cuda_AllocateMemoryFloatPtr(size_t length);
 DemandDistribution *cuda_AllocateMemoryDemandDistribution(size_t length);
 DemandDistribution **cuda_AllocateMemoryDemandDistributionPtr(size_t length);
 

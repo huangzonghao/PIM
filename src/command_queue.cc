@@ -6,7 +6,7 @@
  *    Description:  This file contains the implementation of CommandQueue
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Mon 07 Sep 2015 10:32:38 AM HKT
+ *       Modified:  Thu 10 Sep 2015 09:28:47 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -30,6 +30,17 @@
 #include "../include/device_parameters.h"
 #include "../include/cuda_support.h"
 
+/* =============================================================================
+ *                  Initialization of const static members
+ * =========================================================================== */
+const char *CommandQueue::config_names_[] = { "input_file_name",
+                                              "output_file_name",
+                                              "output_format",
+                                              "policy",
+                                              "recovery_file_name",
+                                              "recording_file_name",
+                                              "logging_file_name"};
+
 /*
  *------------------------------------------------------------------------------
  *       Class:  CommandQueue
@@ -37,7 +48,7 @@
  * Description:  constructor
  *------------------------------------------------------------------------------
  */
-CommandQueue::CommandQueue () {
+CommandQueue::CommandQueue(){
     *get_config_ptr("input_file_name")     = "params.json";
     *get_config_ptr("output_file_name")    = "output.txt";
     *get_config_ptr("output_format")       = "csv";
@@ -394,7 +405,7 @@ bool CommandQueue::update_device_params () {
         demand_table_pointers.push_back(cuda_AllocateMemoryDemandDistribution(1));
         cuda_PassToDevice(host_params_->get_distribution_ptr(i),
                           demand_table_pointers.back(),
-                          1);
+                          size_t(1));
     }
     device_params_->demand_distributions =
         cuda_AllocateMemoryDemandDistributionPtr(device_params_->num_distri);

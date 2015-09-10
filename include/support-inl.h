@@ -6,7 +6,7 @@
  *    Description:  The definition of some supporting inline functions
  *
  *        Created:  Thu Jul 23 00:40:42 2015
- *       Modified:  Thu Aug 27 16:26:14 2015
+ *       Modified:  Thu 10 Sep 2015 04:45:59 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -75,7 +75,7 @@ inline const char *ExeCMD ( const char *cmd ){
  *      @return:  bool
  * =============================================================================
  */
-bool IsValidFileFormat(const char *var){
+inline bool IsValidFileFormat(const char *var){
     for (int i = 0; i < num_policy_options; ++i){
         if (var == policy_options[i])
             return true;
@@ -91,7 +91,7 @@ bool IsValidFileFormat(const char *var){
  *      @return:  bool
  * =============================================================================
  */
-bool IsValidPolicy(const char *var){
+inline bool IsValidPolicy(const char *var){
     for (int i = 0; i < num_file_format_options; ++i){
         if (var == file_format_options[i])
             return true;

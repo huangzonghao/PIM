@@ -9,7 +9,7 @@
  *                    Mostly the interface for other cpp source file
  *
  *        Created:  Thu Jul 23 03:38:40 2015
- *       Modified:  Mon 07 Sep 2015 02:19:06 AM HKT
+ *       Modified:  Thu 10 Sep 2015 11:42:19 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -67,6 +67,9 @@ void g_ZeroizeMemoryFloat(float *array, size_t length){
  *       @param:  pointer to host array, pointer to device array, array size
  *      @return:  void
  * =============================================================================
+ */
+/* we cannot use const for any of the following address since that's not supported
+ * but the cuda lib
  */
 void cuda_PassToDevice ( float *h_array,
                          float *d_array,

@@ -6,13 +6,14 @@
  *    Description:  This file contains the main workflow of the PIM project
  *
  *        Created:  Wed Jul 22 13:57:40 2015
- *       Modified:  Sat Sep  5 14:46:23 2015
+ *       Modified:  Thu 10 Sep 2015 02:55:58 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
  *
  * =============================================================================
  */
+
 
 /* #####   HEADER FILE INCLUDES   ############################################ */
 #include <sys/time.h>
@@ -26,7 +27,6 @@
 #include "../include/system_info.h"
 #include "../include/frame.h"
 #include "../include/device_parameters.h"
-
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  main
@@ -36,11 +36,12 @@ int main ( int argc, const char **argv ) {
 /*-----------------------------------------------------------------------------
  *  set up the InterruptHandler
  *-----------------------------------------------------------------------------*/
-    struct sigaction sigIntHandler;
-    sigIntHandler.sa_handler = InterruptHandler;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = 0;
-    sigaction(SIGINT, &sigIntHandler, NULL);
+    /* struct sigaction sigIntHandler;
+     * sigIntHandler.sa_handler = InterruptHandler;
+     * sigemptyset(&sigIntHandler.sa_mask);
+     * sigIntHandler.sa_flags = 0;
+     * sigaction(SIGINT, &sigIntHandler, NULL);
+     */
 
 /*-----------------------------------------------------------------------------
  *  declare the administrative variables
@@ -53,7 +54,7 @@ int main ( int argc, const char **argv ) {
 /*-----------------------------------------------------------------------------
  *  load the system commands
  *-----------------------------------------------------------------------------*/
-    error_msg = LoadCommands(argc, argv, &cmd);
+    error_msg = LoadCommands(argc, (char**)argv, &cmd);
     if(!error_msg){
         printf("Failure while reading in the commands, exit\n");
         return 1;

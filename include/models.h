@@ -6,7 +6,7 @@
  *    Description:  The header file for all the models
  *
  *        Created:  Fri Aug  7 23:26:29 2015
- *       Modified:  Thu Aug 27 17:41:54 2015
+ *       Modified:  Thu 10 Sep 2015 04:39:06 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -21,11 +21,14 @@ class CommandQueue;
 class SystemInfo;
 
 
+/* #ifdef __DEFINE_CONST_VARS_IN_HEADER_ */
 /* the supported policies */
-const int num_policy_options = 3;
-const char *policy_options[] = {  "all",
+static const int num_policy_options = 3;
+static const char *policy_options[] = {  "all",
                                   "tree",
                                   "fluid" };
+/* #endif */
+
 bool ModelFluid(CommandQueue *cmd,
                 SystemInfo *sysinfo,
                 float *table_to_update,

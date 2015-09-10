@@ -8,7 +8,7 @@
  *                    or algorithm
  *
  *        Created:  Wed Jul 22 14:11:43 2015
- *       Modified:  Thu Aug 27 16:34:02 2015
+ *       Modified:  Thu 10 Sep 2015 02:55:21 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -85,7 +85,8 @@ void PrintUsage (){
   * and this structure shall be the same as the one we use in recording
   */
 extern char *optarg;
-bool LoadCommands ( int argc, char ** argv, CommandQueue * cmd ){
+/* cannot make the argc and argv to const due to getopt */
+bool LoadCommands ( int argc, char **argv, CommandQueue *cmd ){
     if (argc < 2){
         printf("Insufficient input, checkout the usage:\n");
         PrintUsage();
@@ -177,7 +178,7 @@ bool LoadCommands ( int argc, char ** argv, CommandQueue * cmd ){
   *           2) the file is not complete
   * then print the error msg and return false
   */
-bool LoadParameters ( CommandQueue * cmd ){
+bool LoadParameters ( CommandQueue *cmd ){
     if(!DoesItExist(cmd->get_config("input_file_name"))){
         printf("Error: Cannot find file %s", cmd->get_config("input_file_name"));
         return false;

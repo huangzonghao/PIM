@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Sat 05 Sep 2015 05:32:01 PM HKT
+ *       Modified:  Thu 10 Sep 2015 09:07:41 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -104,7 +104,11 @@ class CommandQueue
      *  shall prefer char array when dealing with const chars
      */
     std::string configs_[7];
-    static const char *config_names_[];
+
+    /* you don't have to indicate the array size when initialization, but you have
+     * to fix the array size here! at decalaration!
+     */
+    static const char *config_names_[7];
 
     bool verbose_enabled_;
     bool recovery_enabled_;
@@ -115,15 +119,6 @@ class CommandQueue
     std::string *get_config_ptr(const char *var);
 
 }; /* -----  end of class CommandQueue  ----- */
-
-const char *CommandQueue::config_names_[7] = {"input_file_name",
-                                              "output_file_name",
-                                              "output_format",
-                                              "policy",
-                                              "recovery_file_name",
-                                              "recording_file_name",
-                                              "logging_file_name"};
-
 
 
 #endif   /* ----- #ifndef COMMAND_QUEUE_H_  ----- */

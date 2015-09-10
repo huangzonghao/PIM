@@ -6,7 +6,7 @@
  *    Description:  The definition of the frame function for the PIM problem
  *
  *        Created:  Thu Jul 23 01:09:07 2015
- *       Modified:  Sat Sep  5 12:07:05 2015
+ *       Modified:  Thu 10 Sep 2015 11:51:52 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -98,7 +98,7 @@ bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, std::vector<float*> host
         host_value_table_temp = new float[(int)cmd->get_d_param("table_length")];
         cuda_ReadFromDevice(host_value_table_temp,
                             device_value_tables[1 - current_table_idx],
-                            (int)cmd->get_d_param("table_length"));
+                            (size_t)cmd->get_d_param("table_length"));
         host_value_tables.push_back(host_value_table_temp);
 
         printf("Model fluid has finished successfully\n");
@@ -113,9 +113,9 @@ bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, std::vector<float*> host
          *     device
          */
         int *d_z_records =
-            cuda_AllocateMemoryInt((int)cmd->get_d_param("table_length"));
+            cuda_AllocateMemoryInt((size_t)cmd->get_d_param("table_length"));
         int *d_q_records =
-            cuda_AllocateMemoryInt((int)cmd->get_d_param("table_length"));
+            cuda_AllocateMemoryInt((size_t)cmd->get_d_param("table_length"));
 
         int current_table_idx = 1;
         int distri_idx = 0;
@@ -136,7 +136,7 @@ bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, std::vector<float*> host
         host_value_table_temp = new float[(int)cmd->get_d_param("table_length")];
         cuda_ReadFromDevice(host_value_table_temp,
                             device_value_tables[1 - current_table_idx],
-                            (int)cmd->get_d_param("table_length"));
+                            (size_t)cmd->get_d_param("table_length"));
         host_value_tables.push_back(host_value_table_temp);
 
         printf("Model fluid has finished successfully\n");

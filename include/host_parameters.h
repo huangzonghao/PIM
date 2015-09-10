@@ -6,7 +6,7 @@
  *    Description:  The definition of HostParameters
  *
  *        Created:  Tue Jul 28 14:54:25 2015
- *       Modified:  Mon 07 Sep 2015 03:08:38 PM HKT
+ *       Modified:  Thu 10 Sep 2015 09:30:51 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -23,19 +23,6 @@
  * definition of the class. but due to the stupid complier, i have to put them here
  */
 #define NUM_PARAMS 12
-
-const char *PARAM_NAMES[NUM_PARAMS] = { "T",
-                                "m",
-                                "k",
-                                "maxhold",
-                                "num_distri",
-                                "c",
-                                "h",
-                                "theta",
-                                "r",
-                                "s",
-                                "alpha",
-                                "lambda"};
 
 struct DeviceParameters;
 
@@ -58,14 +45,14 @@ class HostParameters
     /* copy constructor */
     /* HostParameters ( const HostParameters &other ); */
     /* destructor */
-    ~HostParameters ();
+    ~HostParameters (){};
 
     /* =========================   ACCESSORS   =============================== */
     float get_value(const char *var);
     float& operator [](const char *var); /* this is also mutator */
-    DemandDistribution *get_distribution_ptr(int index);
+    struct DemandDistribution *get_distribution_ptr(int index);
     const char *pop_param_names(int idx); /* will return NULL if out of range */
-    const int &get_param_num(){return num_params_;};
+    const int &get_param_num();
     /* float *get_distribution_ptr(int index); */
 
     /* =========================   MUTATORS    =============================== */
@@ -113,11 +100,27 @@ class HostParameters
     *
     */
 
-    int num_params_;
+    static const int num_params_;
 
     /* the following is a c++11 feature, so the compiler support is required */
     /* const char *param_names_[12]; */
-    char **param_names_[NUM_PARAMS];
+    static const char *param_names_[] ;
+
+    /*
+     * static const char *param_names_[] = { "T",
+     *                                       "m",
+     *                                       "k",
+     *                                       "maxhold",
+     *                                       "num_distri",
+     *                                       "c",
+     *                                       "h",
+     *                                       "theta",
+     *                                       "r",
+     *                                       "s",
+     *                                       "alpha",
+     *                                       "lambda"};
+     */
+
     float params_[NUM_PARAMS];
     /* std::vector< std::vector<float> > demand_distributions; */
     std::vector<DemandDistribution> demand_distributions_;

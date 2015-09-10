@@ -6,7 +6,7 @@
  *    Description:  This file contains the denifination of SystemInfo
  *
  *        Created:  Fri Jul 24 01:11:47 2015
- *       Modified:  Sun Aug  9 03:53:58 2015
+ *       Modified:  Thu 10 Sep 2015 02:34:57 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -34,11 +34,11 @@ class SystemInfo
     /* =========================   LIFECYCLE   =============================== */
 
     /* constructor */
-    SystemInfo ();
+    SystemInfo(){};
     /* copy constructor */
-    SystemInfo ( const SystemInfo &other );
+    /* SystemInfo ( const SystemInfo &other ); */
     /* destructor */
-    ~SystemInfo ();
+    ~SystemInfo(){};
 
     /* =========================   ACCESSORS   =============================== */
     int get_value(const char *);

@@ -6,7 +6,7 @@
  *    Description:  The implementation of HostParameters
  *
  *        Created:  Tue Jul 28 14:58:27 2015
- *       Modified:  Mon 07 Sep 2015 03:10:08 PM HKT
+ *       Modified:  Thu 10 Sep 2015 09:31:04 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -19,6 +19,26 @@
 #include "../include/demand_distribution.h"
 
 /* =============================================================================
+ *                  Initialization of const static members
+ * =========================================================================== */
+const int HostParameters::num_params_ = 12;
+/* it seems we have to throw the definition of array of a const char array out of
+ * the definition of a class
+ */
+const char *HostParameters::param_names_[] = { "T",
+                                               "m",
+                                               "k",
+                                               "maxhold",
+                                               "num_distri",
+                                               "c",
+                                               "h",
+                                               "theta",
+                                               "r",
+                                               "s",
+                                               "alpha",
+                                               "lambda"};
+
+/* =============================================================================
  *                  Methods of HostParameters
  * =========================================================================== */
 
@@ -29,12 +49,7 @@
  * Description:  constructor
  *------------------------------------------------------------------------------
  */
-HostParameters::HostParameters(): num_params_(NUM_PARAMS){
-
-    for (int i = 0; i < num_params_; ++i){
-        strcpy(param_names_[i], PARAM_NAMES[i]);
-        params_[i] = 0;
-    }
+HostParameters::HostParameters(){
 }  /* -----  end of method HostParameters::HostParameters  (constructor)  ----- */
 
 /*
@@ -119,7 +134,7 @@ float *HostParameters::get_var_ptr (const char *var) {
  * Description:  returns the pointer to the specific distribution
  *------------------------------------------------------------------------------
  */
-DemandDistribution *HostParameters::get_distribution_ptr(int index){
+struct DemandDistribution *HostParameters::get_distribution_ptr(int index){
     if(index + 1 > (int)demand_distributions_.size()){
         printf ("Error: the distribution index out of range !");
     }
@@ -211,6 +226,16 @@ float HostParameters::get_value (const char *var) {
     return *get_var_ptr(var);
 }       /* -----  end of method HostParameters::get_value  ----- */
 
+/*
+ *------------------------------------------------------------------------------
+ *       Class:  HostParameters
+ *      Method:  get_param_num
+ * Description:  return the number of parameters that need to load from the file
+ *------------------------------------------------------------------------------
+ */
+const int &HostParameters::get_param_num () {
+    return num_params_;
+}       /* -----  end of method HostParameters::get_param_num  ----- */
 
 /*
  *------------------------------------------------------------------------------
