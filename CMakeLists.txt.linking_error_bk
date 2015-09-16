@@ -1,0 +1,28 @@
+# note this is the failed version of cuda seperate compilation,
+# however the problem is i should put the add_subdirectory command
+# in front of the set() commands!!!!!
+# wtf!! this stupid problem has bothered me for more than 5 days!!!!
+cmake_minimum_required(VERSION 2.8)
+
+project(Perishable_Inventory_Management)
+
+find_package(CUDA REQUIRED)
+
+if(CUDA_FOUND)
+    message("cuda found! Configuring the project.")
+    # set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} –arch=sm_20)
+    # i don't even know how did the following setting work...
+    # http://codedmi.com/questions/768126/using-cuda-object-linking-with-cmake
+    # set(CUDA_NVCC_FLAGS "-arch=compute_20; -code=sm_20; -rdc=true; -lcudadevrt")
+    set(CUDA_NVCC_FLAGS "-rdc=true; -lcudadevrt; -lcudart; -lcuda; -lmylib")
+    # set(CMAKE_CXX_FLAGS "-lcudart -lcudadevrt")
+    # list(APPEND CUDA_NVCC_FLAGS "-dc")
+
+    add_subdirectory(src)
+    include_directories(include)
+    set( CMAKE_EXPORT_COMPILE_COMMANDS 1  )
+else()
+    message("cuda not found! please check the system configuration!")
+endif()
+
+# set(CMAKE_CXX_FLAG "-g -Wall")

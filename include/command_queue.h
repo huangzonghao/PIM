@@ -7,7 +7,7 @@
  *                    parameters and controlling information
  *
  *        Created:  Thu Jul 23 00:45:56 2015
- *       Modified:  Thu 10 Sep 2015 09:07:41 AM HKT
+ *       Modified:  Thu 10 Sep 2015 04:38:12 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -69,7 +69,7 @@ class CommandQueue
     /* =========================   OPERATORS   =============================== */
     bool update_device_params();
     /* assignment operator */
-    CommandQueue& operator = ( CommandQueue &other );
+    /* CommandQueue& operator = ( CommandQueue &other ); */
 
     /* print out the parameters stored in HostParameters */
     void print_params();

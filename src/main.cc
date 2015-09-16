@@ -6,7 +6,7 @@
  *    Description:  This file contains the main workflow of the PIM project
  *
  *        Created:  Wed Jul 22 13:57:40 2015
- *       Modified:  Thu 10 Sep 2015 02:55:58 PM HKT
+ *       Modified:  Wed 16 Sep 2015 09:20:47 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -22,6 +22,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <vector>
+
 #include "../include/support.h"
 #include "../include/command_queue.h"
 #include "../include/system_info.h"
@@ -95,6 +96,7 @@ int main ( int argc, const char **argv ) {
         printf("Something went wrong in LetsRock\n");
         return 3;
     }
+    printf("main done\n");
 
     /* end the clock */
     gettimeofday(&tv2, NULL);
@@ -109,11 +111,13 @@ int main ( int argc, const char **argv ) {
      * 2. print the status of the task
      */
     printf("The total time elapsed : %f \n", program_running_time);
-    error_msg = WriteOutputFile(host_value_tables[0],
-                                cmd.get_d_param("table_length"),
-                                1,//output format
-                                cmd.get_config("output_format"));
-
+/*
+ *     error_msg = WriteOutputFile(host_value_tables[0],
+ *                                 cmd.get_d_param("table_length"),
+ *                                 1,//output format
+ *                                 cmd.get_config("output_format"));
+ * 
+ */
     printf("Success: the program finished successfully!\n");
     return 0;
 }       /* ----------  end of function main  ---------- */

@@ -6,7 +6,7 @@
  *    Description:  This file contains the implementation of CommandQueue
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Thu 10 Sep 2015 09:28:47 AM HKT
+ *       Modified:  Thu 10 Sep 2015 04:40:55 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -127,29 +127,29 @@ CommandQueue::~CommandQueue () {
  * Description:  assignment operator
  *------------------------------------------------------------------------------
  */
-CommandQueue&
-CommandQueue::operator = ( CommandQueue &other ) {
+/* CommandQueue& */
+/* CommandQueue::operator = ( CommandQueue &other ) { */
     /* components need to copy:
      *     1) host_params_ and device_params_
      *     2) demand_table_pointers
      *     3) configs_
      *     4) 5 enables
      */
-    if (this != &other){
-        *host_params_ = *other.get_host_param_pointer();
-        update_device_params();
-        demand_table_pointers = other.demand_table_pointers;
-        for (int i = 0; i < num_configs_; ++i){
-            configs_[i] = other.configs_[i];
-        }
-        verbose_enabled_     = other.verbose_enabled_;
-        recovery_enabled_    = other.recovery_enabled_;
-        logging_enabled_     = other.logging_enabled_;
-        recording_enabled_   = other.recording_enabled_;
-        print_help_          = other.print_help_;
-    }
-    return *this;
-}  /* -----  end of method CommandQueue::operator =  (assignment operator)  ----- */
+    /* if (this != &other){ */
+        /* *host_params_ = *other.get_host_param_pointer(); */
+        /* update_device_params(); */
+        /* demand_table_pointers = other.demand_table_pointers; */
+        /* for (int i = 0; i < num_configs_; ++i){ */
+            /* configs_[i] = other.configs_[i]; */
+        /* } */
+        /* verbose_enabled_     = other.verbose_enabled_; */
+        /* recovery_enabled_    = other.recovery_enabled_; */
+        /* logging_enabled_     = other.logging_enabled_; */
+        /* recording_enabled_   = other.recording_enabled_; */
+        /* print_help_          = other.print_help_; */
+    /* } */
+    /* return *this; */
+/* }  [> -----  end of method CommandQueue::operator =  (assignment operator)  ----- <] */
 
 /*
  *------------------------------------------------------------------------------
