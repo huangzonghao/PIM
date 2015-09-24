@@ -6,7 +6,7 @@
  *    Description:  The definition of some supporting inline functions
  *
  *        Created:  Thu Jul 23 00:40:42 2015
- *       Modified:  Thu 10 Sep 2015 04:45:59 AM HKT
+ *       Modified:  Thu 24 Sep 2015 03:14:49 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -17,6 +17,8 @@
 #define SUPPORT_INL_H_
 
 #include "support.h"
+
+#include <string.h>
 
 #include <fstream>
 #include "models.h"
@@ -55,7 +57,7 @@ inline bool DoesItExist ( const char *filename ){
  */
 inline const char *ExeCMD ( const char *cmd ){
     FILE *pipe = popen(cmd, "r");
-    if (!pipe) return "ERROR";
+    if (!pipe) return "ERROR : Cannot execute command";
     char buffer[128];
     std::string result = "";
     while(!feof(pipe)) {
@@ -76,8 +78,8 @@ inline const char *ExeCMD ( const char *cmd ){
  * =============================================================================
  */
 inline bool IsValidFileFormat(const char *var){
-    for (int i = 0; i < num_policy_options; ++i){
-        if (var == policy_options[i])
+    for (int i = 0; i < num_file_format_options; ++i){
+        if (strcmp(var, file_format_options[i]) == 0)
             return true;
     }
     return false;
@@ -92,8 +94,8 @@ inline bool IsValidFileFormat(const char *var){
  * =============================================================================
  */
 inline bool IsValidPolicy(const char *var){
-    for (int i = 0; i < num_file_format_options; ++i){
-        if (var == file_format_options[i])
+    for (int i = 0; i < num_policy_options; ++i){
+        if (strcmp(var, policy_options[i]) == 0)
             return true;
     }
     return false;

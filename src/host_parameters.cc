@@ -6,7 +6,7 @@
  *    Description:  The implementation of HostParameters
  *
  *        Created:  Tue Jul 28 14:58:27 2015
- *       Modified:  Thu 10 Sep 2015 09:31:04 AM HKT
+ *       Modified:  Thu 24 Sep 2015 02:40:48 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -119,11 +119,11 @@ HostParameters::HostParameters(){
  */
 float *HostParameters::get_var_ptr (const char *var) {
     for (int i = 0; i < num_params_; ++i){
-        if (var == param_names_[i]){
+        if (strcmp(var, param_names_[i]) == 0){
             return params_ + i;
         }
     }
-    printf("Error: HostParameters doesn't have %s as a variable", var);
+    printf("Error: HostParameters doesn't have %s as a variable\n", var);
     return NULL;
 }       /* -----  end of method HostParameters::get_var_ptr  ----- */
 
@@ -136,7 +136,7 @@ float *HostParameters::get_var_ptr (const char *var) {
  */
 struct DemandDistribution *HostParameters::get_distribution_ptr(int index){
     if(index + 1 > (int)demand_distributions_.size()){
-        printf ("Error: the distribution index out of range !");
+        printf ("Error: the distribution index out of range !\n");
     }
     return demand_distributions_.data() + index;
 }       /* -----  end of method HostParameters::get_distribution_ptr  ----- */
@@ -151,7 +151,7 @@ struct DemandDistribution *HostParameters::get_distribution_ptr(int index){
 /* set the variable by name */
 bool HostParameters::set_param ( const char *var, float value ) {
     if (get_var_ptr(var) == NULL){
-        printf("Error: cannot get the pointer of %s, set_param failed", var);
+        printf("Error: Cannot get the pointer of %s, set_param failed\n", var);
         return false;
     }
     *get_var_ptr(var) = value;
@@ -164,8 +164,8 @@ bool HostParameters::set_param (int idx, float value) {
         return true;
     }
     else {
-        printf("Error: the index for the parameter is out of range\n"
-               "Failed to set_param by idx.\n");
+        printf("Error: The index for the parameter is out of range\n"
+               "       Failed to set_param by idx.\n");
         return false;
     }
 }   /* -----  end of method HostParameters::set_param  ----- */
@@ -175,19 +175,20 @@ bool HostParameters::set_param (int idx, float value) {
  *------------------------------------------------------------------------------
  *       Class:  HostParameters
  *      Method:  set_distribution
- * Description:  set the distribution data
- *                 will set the one entire demand array at once
+ * Description:  takes in a single distribution contained in vector and store it
+ *                 in a DemandDistribution struct and hold the pointer to the
+ *                 DemandDistribution struct in HostParameters::demand_distributions_
  *------------------------------------------------------------------------------
  */
 bool HostParameters::set_distribution (int distriIdx,
                                        float *val,
                                        size_t min_demand,
                                        size_t max_demand){
-    /* first check if the distriIdx is beyond the size of demand_distributions,
-     *     if true then allocate a new space
+    /* first check if the distriIdx is beyond the size of
+     * HostParameters::demand_distributions_, if true then allocate a new space
      */
     if (distriIdx + 1 > (int)demand_distributions_.size()){
-        DemandDistribution temp;
+        struct DemandDistribution temp;
         demand_distributions_.push_back(temp);
     }
     /* now pass the entire array to the DemandDistribution
@@ -195,9 +196,9 @@ bool HostParameters::set_distribution (int distriIdx,
      *     check first
      */
     if(max_demand - min_demand > MAX_DISTRIBUTION_LENGTH){
-        printf("Error: the distribution array is too long, please check the"
-               "distribution array or modify the MAX_DISTRIBUTION_LENGTH macro"
-               "in include/demand_distribution.h if necessary\n");
+        printf("Error: The distribution array is too long, please check the\n"
+               "       distribution array or modify the MAX_DISTRIBUTION_LENGTH\n"
+               "       macro in include/demand_distribution.h if necessary\n");
         return false;
     }
     for(size_t i = 0; i < max_demand - min_demand; ++i){
@@ -206,6 +207,7 @@ bool HostParameters::set_distribution (int distriIdx,
     /* lastly set the min_demand and the max_demand */
     demand_distributions_[distriIdx].min_demand = min_demand;
     demand_distributions_[distriIdx].max_demand = max_demand;
+
     return true;
 }       /* -----  end of method HostParameters::set_distribution  ----- */
 
@@ -220,7 +222,7 @@ bool HostParameters::set_distribution (int distriIdx,
  */
 float HostParameters::get_value (const char *var) {
     if (get_var_ptr(var) == NULL){
-        printf("Error: cannot get the pointer to %s, get_value failed.", var);
+        printf("Error: Cannot get the pointer to %s, get_value failed.\n", var);
         return 0;
     }
     return *get_var_ptr(var);
@@ -283,7 +285,7 @@ float& HostParameters::operator [] (const char *var){
  * Description:  pop up the parameters names for loading the paramters
  *------------------------------------------------------------------------------
  */
-const char* HostParameters::pop_param_names (int idx) {
+const char *HostParameters::pop_param_names (int idx) {
     if (idx < num_params_){
         return param_names_[idx];
     }

@@ -6,7 +6,7 @@
  *    Description:  This is the header file of support.h
  *
  *        Created:  Wed Jul 22 18:38:32 2015
- *       Modified:  Thu 10 Sep 2015 02:55:37 PM HKT
+ *       Modified:  Thu 24 Sep 2015 09:51:13 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -43,15 +43,17 @@ bool WriteOutputFile( const float *value_table,
                       const int output_format,
                       const char *output_filename);
 
-bool RecordProgress( const float *first_table,
-                     const float *second_table,
-                     const size_t table_length,
-                     const char *progress_file_name);
+bool RecordProgress ( char *policy,
+                      const int i_period,
+                      const float *first_table,
+                      const float *second_table,
+                      const size_t table_length,
+                      const char *progress_file_name );
 
-bool LoadProgress( float *first_table,
-                   float *second_table,
-                   const size_t table_length,
-                   const char *progress_file_name);
+bool LoadProgress ( CommandQueue *cmd,
+                    int &i_period,
+                    float *first_table,
+                    float *second_table);
 
 /* void PrintVerboseInfo (); */
 

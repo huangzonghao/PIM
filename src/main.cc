@@ -6,7 +6,7 @@
  *    Description:  This file contains the main workflow of the PIM project
  *
  *        Created:  Wed Jul 22 13:57:40 2015
- *       Modified:  Wed 16 Sep 2015 09:20:47 AM HKT
+ *       Modified:  Thu 24 Sep 2015 09:02:27 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -22,8 +22,10 @@
 #include <signal.h>
 #include <stdio.h>
 #include <vector>
+#include <iostream>
 
 #include "../include/support.h"
+#include "../include/support-inl.h"
 #include "../include/command_queue.h"
 #include "../include/system_info.h"
 #include "../include/frame.h"
@@ -33,7 +35,10 @@
  *         Name:  main
  * =============================================================================
  */
-int main ( int argc, const char **argv ) {
+int main (int argc, const char **argv) {
+    printf("Program started\n"
+            "The current workding directory is %s\n\n",
+            ExeCMD("pwd"));
 /*-----------------------------------------------------------------------------
  *  set up the InterruptHandler
  *-----------------------------------------------------------------------------*/
@@ -57,7 +62,7 @@ int main ( int argc, const char **argv ) {
  *-----------------------------------------------------------------------------*/
     error_msg = LoadCommands(argc, (char**)argv, &cmd);
     if(!error_msg){
-        printf("Failure while reading in the commands, exit\n");
+        printf("Error detected while reading in the commands, exit\n");
         return 1;
     }
 
@@ -72,7 +77,7 @@ int main ( int argc, const char **argv ) {
  *-----------------------------------------------------------------------------*/
     error_msg = LoadParameters(&cmd);
     if(!error_msg){
-        printf("Failure while loading the parameters, exit\n");
+        printf("Error detected while loading the parameters, exit\n");
         return 2;
     }
     cmd.update_device_params();
@@ -111,13 +116,11 @@ int main ( int argc, const char **argv ) {
      * 2. print the status of the task
      */
     printf("The total time elapsed : %f \n", program_running_time);
-/*
- *     error_msg = WriteOutputFile(host_value_tables[0],
- *                                 cmd.get_d_param("table_length"),
- *                                 1,//output format
- *                                 cmd.get_config("output_format"));
- * 
- */
+    error_msg = WriteOutputFile(host_value_tables[0],
+                                cmd.get_d_param("table_length"),
+                                1,//output format
+                                cmd.get_config("output_file_name"));
+
     printf("Success: the program finished successfully!\n");
     return 0;
 }       /* ----------  end of function main  ---------- */

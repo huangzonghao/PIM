@@ -6,7 +6,7 @@
  *    Description:   The header file of frame.cc
  *
  *        Created:  Fri Aug  7 18:03:09 2015
- *       Modified:  Sat Sep  5 11:44:15 2015
+ *       Modified:  Thu 24 Sep 2015 09:01:13 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -19,7 +19,9 @@
 class CommandQueue;
 class SystemInfo;
 
-bool LetsRock(CommandQueue * cmd, SystemInfo * sysinfo, std::vector<float*> host_value_tables);
+bool LetsRock( CommandQueue * cmd,
+               SystemInfo * sysinfo,
+               std::vector<float*> &host_value_tables );
 
 #endif   /* ----- #ifndef FRAME_H_  ----- */
 /* =============================================================================

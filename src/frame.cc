@@ -6,7 +6,7 @@
  *    Description:  The definition of the frame function for the PIM problem
  *
  *        Created:  Thu Jul 23 01:09:07 2015
- *       Modified:  Thu 10 Sep 2015 11:51:52 AM HKT
+ *       Modified:  Thu 24 Sep 2015 09:51:51 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -33,6 +33,7 @@
 #include "../include/cuda_support.h"
 #include "../include/device_parameters.h"
 #include "../include/demand_distribution.h"
+#include "../include/support.h"
 
 /*
  * ===  FUNCTION  ==============================================================
@@ -43,7 +44,9 @@
  *      @return:  whether the operation is suceessful or not
  * =============================================================================
  */
-bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, std::vector<float*> host_value_tables ){
+bool LetsRock ( CommandQueue *cmd,
+                SystemInfo *sysinfo,
+                std::vector<float*> &host_value_tables ){
     /* to deal with the errors while the computation */
     bool error_msg;
 
@@ -55,16 +58,28 @@ bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, std::vector<float*> host
 
     /* check if there are some tasks to recover */
 
+    int set_period = cmd->get_h_param("T");
+    if(cmd->check_command("recovery")){
+        float *r_table_to_update = new float[(int)cmd->get_d_param("table_length")];
+        float *r_table_for_reference = new float[(int)cmd->get_d_param("table_length")];
+        LoadProgress( cmd,
+                      set_period,
+                      r_table_to_update,
+                      r_table_for_reference);
+    }
 /*-----------------------------------------------------------------------------
  *  the fluid policy
  *-----------------------------------------------------------------------------*/
     if( strcmp(cmd->get_config("policy"), "fluid") == 0 ||
         strcmp(cmd->get_config("policy"),  "all") == 0 ){
+        if(cmd->check_command("recovery")){
+
+        }
         ModelInit(cmd, sysinfo, device_value_tables[0]);
         /* current table is the table to update */
         int current_table_idx = 1;
         int distri_idx = 0;
-        for ( int i_period = cmd->get_h_param("T"); i_period > 0; --i_period ){
+        for ( int i_period = set_period; i_period > 0; --i_period ){
             if(i_period != 1){
                 error_msg = ModelFluid(cmd, sysinfo,
                                        device_value_tables[current_table_idx],
@@ -72,8 +87,9 @@ bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, std::vector<float*> host
                                        distri_idx,
                                        0);
                 current_table_idx = 1 - current_table_idx;
-                if(error_msg){
-                    printf("Error: Something went wrong in ModelFluid, exit.\n");
+                if(!error_msg){
+                    printf("Error: Something went wrong in ModelFluid, "
+                            "period %d. Exit.\n", i_period);
                     return false;
                 }
             }
@@ -89,8 +105,9 @@ bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, std::vector<float*> host
                                        device_value_tables[1 - current_table_idx],
                                        distri_idx,
                                        (size_t)ceil(expect_demand));
-                if(error_msg){
-                    printf("Error: Something went wrong in ModelFluid, exit.\n");
+                if(!error_msg){
+                    printf("Error: Something went wrong in ModelFluid, "
+                            "period %d. Exit.\n", i_period);
                     return false;
                 }
             }
@@ -99,6 +116,10 @@ bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, std::vector<float*> host
         cuda_ReadFromDevice(host_value_table_temp,
                             device_value_tables[1 - current_table_idx],
                             (size_t)cmd->get_d_param("table_length"));
+        /* for (int i = 0; i < (int)cmd->get_d_param("table_length"); ++i){ */
+            /* printf("%f, ",host_value_table_temp[i]); */
+        /* } */
+        /* printf("\n"); */
         host_value_tables.push_back(host_value_table_temp);
 
         printf("Model fluid has finished successfully\n");
@@ -120,7 +141,7 @@ bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, std::vector<float*> host
         int current_table_idx = 1;
         int distri_idx = 0;
         ModelInit(cmd, sysinfo, device_value_tables[0]);
-        for ( int i_period = cmd->get_h_param("T"); i_period > 0; --i_period ){
+        for ( int i_period = set_period; i_period > 0; --i_period ){
             error_msg = ModelDP( cmd,
                                  sysinfo,
                                  device_value_tables[current_table_idx],
@@ -128,8 +149,9 @@ bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, std::vector<float*> host
                                  distri_idx,
                                  d_z_records, d_q_records);
             current_table_idx = 1 - current_table_idx;
-            if(error_msg){
-                printf("Error: Something went wrong in ModelDP, exit.\n");
+            if(!error_msg){
+                printf("Error: Something went wrong in ModelDP, "
+                       "period %d. Exit.\n", i_period);
                 return false;
             }
         }
@@ -139,7 +161,7 @@ bool LetsRock ( CommandQueue *cmd, SystemInfo *sysinfo, std::vector<float*> host
                             (size_t)cmd->get_d_param("table_length"));
         host_value_tables.push_back(host_value_table_temp);
 
-        printf("Model fluid has finished successfully\n");
+        printf("Model DP has finished successfully\n");
     }
     return true;
 }       /* -----  end of function LetsRock  ----- */

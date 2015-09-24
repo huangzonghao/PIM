@@ -8,7 +8,7 @@
  *                    or algorithm
  *
  *        Created:  Wed Jul 22 14:11:43 2015
- *       Modified:  Thu 10 Sep 2015 02:55:21 PM HKT
+ *       Modified:  Thu 24 Sep 2015 09:52:51 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -20,9 +20,11 @@
 #include "../include/support.h"
 
 #include <stdlib.h>
+#include <assert.h>
 #include <unistd.h>
 #include <signal.h>
 #include <fstream>
+#include <string>
 #include <iostream>
 
 #include "../include/support-inl.h"
@@ -30,6 +32,7 @@
 
 /* the following macros are for the format of the progress recording file */
 #define PROGRESS_RECORDING_FILE_HEADER "/* Progress Recording File */"
+#define PROGRESS_RECORDING_FILE_CONFIG "/* Configurations */"
 #define PROGRESS_RECORDING_FILE_FIRST_TABLE "/* Table To Update */"
 #define PROGRESS_RECORDING_FILE_SECOND_TABLE "/* Table For Reference */"
 
@@ -44,7 +47,7 @@
  * =============================================================================
  */
 void PrintUsage (){
-    printf( "This program solves the perishable inventory problem.\n"
+    printf( "This program solves the perishable inventory problem.\n\n"
             "Usage:\n"
             "\t-i <filename>\n"
             "\t\tSet the input parameter file name, default = params.json\n"
@@ -53,7 +56,7 @@ void PrintUsage (){
             "\t-f [csv | nature | json | xml]\n"
             "\t\tSet the output file format, default = csv\n"
             "\t-p [all | tree | fluid]\n"
-            "\t\tSet the inventory management policy, default = all\n"
+            "\t\tSet the inventory management policy, default = fluid\n"
             "\t-r <filename>\n"
             "\t\tRestart from the previous ending point, the save file must be\n"
             "\t\tindicated. This option will disable all the other settings\n"
@@ -64,6 +67,8 @@ void PrintUsage (){
             "\t\tWrite task log to the indicated file\n"
             "\t-v\n"
             "\t\tVerbose, print out all the task information\n"
+            "\t-d\n"
+            "\t\tDefault, run the program with default settings\n"
             "\t-h\n"
             "\t-?\n"
             "\t\tPrint this help manual\n"
@@ -93,9 +98,10 @@ bool LoadCommands ( int argc, char **argv, CommandQueue *cmd ){
         return false;
     }
     char command;
-    while ((command = getopt(argc, argv, "?i:o:f:p:r:s:l:vh")) > 0){
+    while ((command = getopt(argc, argv, "?i:o:f:p:r:s:l:vhd")) > 0){
         switch (command){
             case 'i':
+                cmd->load_commands("INPUT_FILE", optarg);
                 break;
             case 'o':
                 cmd->load_commands("OUTPUT_FILE", optarg);
@@ -105,7 +111,7 @@ bool LoadCommands ( int argc, char **argv, CommandQueue *cmd ){
                     cmd->load_commands("OUTPUT_FORMAT", optarg);
                 }
                 else {
-                    printf("Invalid output format, exit");
+                    printf("Error: Invalid output format, exit\n");
                     return false;
                 }
                 break;
@@ -114,7 +120,7 @@ bool LoadCommands ( int argc, char **argv, CommandQueue *cmd ){
                     cmd->load_commands("POLICY", optarg);
                 }
                 else {
-                    printf("Invalid policy, exit");
+                    printf("Error: Invalid policy, exit\n");
                     return false;
                 }
                 break;
@@ -133,6 +139,8 @@ bool LoadCommands ( int argc, char **argv, CommandQueue *cmd ){
             case '?':
             case 'h':
                 cmd->load_commands("PRINT_HELP", "1");
+                break;
+            case 'd':
                 break;
         }
     }
@@ -180,7 +188,10 @@ bool LoadCommands ( int argc, char **argv, CommandQueue *cmd ){
   */
 bool LoadParameters ( CommandQueue *cmd ){
     if(!DoesItExist(cmd->get_config("input_file_name"))){
-        printf("Error: Cannot find file %s", cmd->get_config("input_file_name"));
+        printf("Error: Cannot find file %s/%s\n"
+               "       Please type in the correct path to the config file.\n",
+                ExeCMD("pwd"),
+                cmd->get_config("input_file_name"));
         return false;
     }
     bool processing_status = false;
@@ -189,7 +200,7 @@ bool LoadParameters ( CommandQueue *cmd ){
         return true;
     }
     else {
-        printf("Error: something went wrong while loading the parameters");
+        printf("Error: Something went wrong while loading the parameters\n");
         return false;
     }
 }       /* -----  end of function LoadParameters  ----- */
@@ -216,7 +227,8 @@ bool WriteOutputFile ( const float *value_table,
 
     if ( DoesItExist(output_file_name) ) {
         std::string user_option;
-        printf("%s already exists, overwritten? (y/n) : ", output_file_name);
+        printf("WARNING: %s already exists, overwritten? (y/n) : ",
+               output_file_name);
         std::cin >> user_option;
         if ( user_option == "y")
             remove(output_file_name);
@@ -259,14 +271,17 @@ bool WriteOutputFile ( const float *value_table,
   * first then rename it to the record_label
   * May need to set up a struct to store some status values
   */
-bool RecordProgress ( const float *first_table,
+bool RecordProgress ( char *policy,
+                      const int i_period,
+                      const float *first_table,
                       const float *second_table,
                       const size_t table_length,
                       const char *progress_file_name ){
     printf("Now strat to record the progress.\n");
     if ( DoesItExist(progress_file_name) ) {
         std::string user_option;
-        printf("The file %s already exists, overwirtten? (y/n) : ", progress_file_name);
+        printf("The file %s already exists, overwirtten? (y/n) : ",
+                progress_file_name);
         std::cin >> user_option;
         if ( user_option == "y")
             remove(progress_file_name);
@@ -278,6 +293,8 @@ bool RecordProgress ( const float *first_table,
     ofs.open (progress_file_name , std::ofstream::out | std::ofstream::app);
     /* write the header */
     ofs << PROGRESS_RECORDING_FILE_HEADER << std::endl;
+    ofs << PROGRESS_RECORDING_FILE_CONFIG << std::endl;
+    ofs << policy << std::endl << i_period << std::endl;
     /* first write the current table */
     ofs << PROGRESS_RECORDING_FILE_FIRST_TABLE << std::endl;
     for(size_t i = 0; i < table_length; ++i){
@@ -291,7 +308,8 @@ bool RecordProgress ( const float *first_table,
     }
 
     ofs.close();
-    printf("The progerss recording file %s has written successfully!\n", progress_file_name);
+    printf("The progerss recording file %s has written successfully!\n",
+            progress_file_name);
 
     return true;
 }       /* -----  end of function RecordProgress  ----- */
@@ -306,13 +324,14 @@ bool RecordProgress ( const float *first_table,
  *      @return:  status of loading
  * =============================================================================
  */
-bool LoadProgress ( float *first_table,
-                    float *second_table,
-                    const size_t table_length,
-                    const char *progress_file_name ){
-    std::ifstream fin (progress_file_name);
+bool LoadProgress ( CommandQueue *cmd,
+                    int &i_period,
+                    float *first_table,
+                    float *second_table ){
+    std::ifstream fin (cmd->get_config("recovery_file_name"));
     if (!fin.is_open()){
-        printf("Error: The progerss recording file %s is not found!\n", progress_file_name);
+        printf("Error: The progerss recording file %s is not found!\n",
+                cmd->get_config("recovery_file_name"));
         return false;
     }
     std::string temp_line;
@@ -320,27 +339,39 @@ bool LoadProgress ( float *first_table,
     /* get the first line and check if this is a progerss recording file */
     std::getline(fin, temp_line);
     if(temp_line != PROGRESS_RECORDING_FILE_HEADER){
-        printf("Error: %s is not a valid progress recording file.!\n", progress_file_name);
+        printf("Error: %s is not a valid progress recording file.!\n",
+                cmd->get_config("recovery_file_name"));
         return false;
     }
 
+    /* the configs */
+    std::getline(fin, temp_line);
+    if(temp_line != PROGRESS_RECORDING_FILE_CONFIG){
+        printf("Error: Cannot find the information of the config!\n");
+        return false;
+    }
+    std::string temp_policy;
+    fin >> temp_policy;
+    assert(temp_policy != "all");
+    fin >> i_period;
+    cmd->load_commands("POLICY", temp_policy.data());
     /* then the first table */
     std::getline(fin, temp_line);
     if(temp_line != PROGRESS_RECORDING_FILE_FIRST_TABLE){
-        printf("Error: cannot find the information of the first table!\n");
+        printf("Error: Cannot find the information of the first table!\n");
         return false;
     }
-    for (size_t i = 0; i < table_length; ++i){
+    for (size_t i = 0; i < cmd->get_d_param("table_length"); ++i){
         fin >> first_table[i];
     }
 
     /* then the second table */
     std::getline(fin, temp_line);
     if(temp_line != PROGRESS_RECORDING_FILE_SECOND_TABLE){
-        printf("Error: cannot find the information of the second table!\n");
+        printf("Error: Cannot find the information of the second table!\n");
         return false;
     }
-    for(size_t i = 0; i < table_length; ++i){
+    for(size_t i = 0; i < cmd->get_d_param("table_length"); ++i){
         fin >> second_table[i];
     }
     fin.close();

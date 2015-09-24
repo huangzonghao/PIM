@@ -6,7 +6,7 @@
  *    Description:  All the functions to compute the fluid policy
  *
  *        Created:  Fri Aug  7 23:34:03 2015
- *       Modified:  Mon 07 Sep 2015 10:47:01 AM HKT
+ *       Modified:  Thu 24 Sep 2015 08:46:02 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -45,6 +45,7 @@ void g_ModelFluid(struct DeviceParameters d,
 
     // this is both the thread index and the data index in this batch
     size_t myIdx = blockIdx.x * blockDim.x + threadIdx.x;
+    printf("this is kernel %d\n",myIdx );
     size_t dataIdx = myIdx + batch_idx * gridDim.x * blockDim.x;
 
     /* because we may use more threads than needed */
@@ -94,21 +95,28 @@ bool ModelFluid(CommandQueue *cmd,
                 int demand_distri_idx,
                 size_t depletion_indicator){
 
+    printf("In modelFluid\n");
     // each thread will take care of a state at once
-    size_t batch_amount = cmd->get_device_param_pointer()->table_length
+    printf("sys numcores : %d, sys coresize : %d\n", sysinfo->get_value("num_cores"), sysinfo->get_value("core_size"));
+    size_t batch_amount = (size_t)cmd->get_d_param("table_length")
                         / sysinfo->get_value("num_cores")
                         / sysinfo->get_value("core_size") + 1;
-
+    printf("the batch size, %d\n", batch_amount);
     for ( size_t i = 0; i < batch_amount; ++i){
+        printf("before launching the kernel\n");
         g_ModelFluid
             <<<sysinfo->get_value("num_cores"), sysinfo->get_value("core_size")>>>
+            /* something went wrong here */
+            /* <<<sysinfo->get_value("num_cores"), 100>>> */
             (*(cmd->get_device_param_pointer()),
              table_to_update,
              table_for_reference,
              demand_distri_idx,
              depletion_indicator,
              i);
+        printf("kernel done\n");
     }
+    printf("modelFluid done\n");
     return true;
 }       /* -----  end of function ModelFluid  ----- */
 

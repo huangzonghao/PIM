@@ -6,7 +6,7 @@
  *    Description:  This file contains the implementation of CommandQueue
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Thu 10 Sep 2015 04:40:55 PM HKT
+ *       Modified:  Thu 24 Sep 2015 03:00:39 AM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -52,9 +52,9 @@ CommandQueue::CommandQueue(){
     *get_config_ptr("input_file_name")     = "params.json";
     *get_config_ptr("output_file_name")    = "output.txt";
     *get_config_ptr("output_format")       = "csv";
-    *get_config_ptr("policy")              = "all";
+    *get_config_ptr("policy")              = "fluid";
     *get_config_ptr("recovery_file_name")  = "";
-    *get_config_ptr("loggirg_file_name")   = "";
+    *get_config_ptr("logging_file_name")   = "";
     *get_config_ptr("recording_file_name") = "";
 
     verbose_enabled_   = false;
@@ -298,6 +298,7 @@ bool CommandQueue::load_host_params ( const char *var, float value ) {
  */
 bool CommandQueue::load_files (const char *type) {
     if(strcmp(type, "param") == 0){
+        printf("start to load the params\n");
         FILE *fp = std::fopen(get_config("input_file_name"), "r");
         char readBuffer[65536];
         rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
@@ -307,13 +308,15 @@ bool CommandQueue::load_files (const char *type) {
         bool process_status = false;
         for (int i = 0; i < host_params_->get_param_num(); ++i){
             process_status =
-                host_params_->set_param(i, para[host_params_->pop_param_names(i)].GetDouble());
+                host_params_->set_param(i,
+                    (float)para[host_params_->pop_param_names(i)].GetDouble());
             if (!process_status){
                 printf("Error: Failed to load parameter : %s, exit.\n",
                         host_params_->pop_param_names(i));
                 return false;
             }
         }
+
         /* then load the demand distributions */
         /* for setting the distribution, we first get the entire array and then
          *     pass the array to the method of HostParameters
@@ -323,18 +326,24 @@ bool CommandQueue::load_files (const char *type) {
         size_t temp_min_demand = 0;
         size_t temp_max_demand = 0;
         std::vector<float> temp_array;
-        for(int i = 0; i < num_distri; ++i){
-            const rapidjson::Value& demand_array = demand_arrays[i];
+        /* note never use i and j as the iterator anymore!!!!
+         * you may mess them up!!!
+         */
+        for(int i_distri = 0; i_distri < num_distri; ++i_distri){
+            const rapidjson::Value& demand_array = demand_arrays[i_distri];
             temp_array.clear();
-            /* the first two elements of the arary is the min_demand and max_demand */
+            /* [> the first two elements of the arary is the min_demand and max_demand <] */
             temp_min_demand = (size_t)demand_array[0].GetInt();
             temp_max_demand = (size_t)demand_array[1].GetInt();
-            /* read in all the data elements */
-            for(int j = 0; j < (int)(temp_max_demand - temp_min_demand); ++j){
-                temp_array.push_back(demand_array[i + 2].GetDouble());
+            /* [> read in all the data elements <] */
+            for(int i_data = 0; i_data < (int)(temp_max_demand - temp_min_demand); ++i_data){
+                temp_array.push_back(demand_array[i_data + 2].GetDouble());
             }
-            /* pass to the HostParameters */
-            process_status = host_params_->set_distribution(i, temp_array.data(), temp_min_demand, temp_max_demand);
+            /* [> pass to the HostParameters <] */
+            process_status = host_params_->set_distribution(i_distri,
+                                                            temp_array.data(),
+                                                            temp_min_demand,
+                                                            temp_max_demand);
             if(!process_status){
                 printf("Error: something went wrong while setting the distribution.\n");
                 return false;
@@ -342,6 +351,7 @@ bool CommandQueue::load_files (const char *type) {
         }
 
         fclose(fp);
+        printf("load completed\n");
 
         return true;
     }
@@ -371,11 +381,12 @@ bool CommandQueue::update_device_params () {
     device_params_->alpha      =         host_params_->get_value("alpha");
     device_params_->lambda     =         host_params_->get_value("lambda");
 
-    device_params_->table_length = (size_t)pow(host_params_->get_value("k"), host_params_->get_value("m"));
+    device_params_->table_length = (size_t) pow(host_params_->get_value("k"),
+                                                host_params_->get_value("m"));
 
     /* now start to deal with the demand distribution */
-    /* Note: different demand_distribution may have different length, so we allocate
-     *           device memory as we process
+    /* Note: different demand_distribution may have different length, so we
+     *         allocate device memory as we process
      */
     if(device_params_->demand_distributions != NULL){
         cuda_FreeMemory(device_params_->demand_distributions);
@@ -427,37 +438,37 @@ bool CommandQueue::update_device_params () {
 bool CommandQueue::load_commands (const char *var, const char *value) {
         if( strcmp(var, "INPUT_FILE") == 0 )
             *get_config_ptr("input_file_name") = value;
-        if( strcmp(var, "OUPUT_FILE") == 0 )
+        else if( strcmp(var, "OUPUT_FILE") == 0 )
             *get_config_ptr("output_file_name") = value;
-        if( strcmp(var, "OUPUT_FORMAT") == 0 ){
+        else if( strcmp(var, "OUPUT_FORMAT") == 0 ){
             if (!IsValidFileFormat(value)){
                 printf("Error: Invalid file format, exit\n");
                 return false;
             }
             *get_config_ptr("output_file_format") = value;
         }
-        if( strcmp(var, "POLICY") == 0 ){
+        else if( strcmp(var, "POLICY") == 0 ){
             if (!IsValidPolicy(value)){
                 printf("Error: Invalid policy, exit\n");
                 return false;
             }
             *get_config_ptr("policy") = value;
         }
-        if( strcmp(var, "RECOVERY") == 0 ){
+        else if( strcmp(var, "RECOVERY") == 0 ){
             *get_config_ptr("recovery_file_name") = value;
             recovery_enabled_ = true;
         }
-        if( strcmp(var, "RECORDING") == 0 ){
+        else if( strcmp(var, "RECORDING") == 0 ){
             *get_config_ptr("recording_file_name") = value;
             recording_enabled_ = true;
         }
-        if( strcmp(var, "ENABLE_VERBOSE") == 0 )
+        else if( strcmp(var, "ENABLE_VERBOSE") == 0 )
             verbose_enabled_ = true;
-        if( strcmp(var, "LOGGING") == 0 ){
+        else if( strcmp(var, "LOGGING") == 0 ){
             *get_config_ptr("logging_file_name") = value;
             logging_enabled_ = true;
         }
-        if( strcmp(var, "PRINT_HELP") == 0 )
+        else if( strcmp(var, "PRINT_HELP") == 0 )
             print_help_ = true;
         else {
             printf("%s is not a valid attribute of CommandQueue, exit.\n", var);

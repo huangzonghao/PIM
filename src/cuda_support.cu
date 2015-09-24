@@ -9,7 +9,7 @@
  *                    Mostly the interface for other cpp source file
  *
  *        Created:  Thu Jul 23 03:38:40 2015
- *       Modified:  Thu 10 Sep 2015 11:42:19 AM HKT
+ *       Modified:  Thu 17 Sep 2015 12:56:06 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -21,6 +21,8 @@
 
 #include <stdlib.h>
 #include <cuda.h>
+#include <cuda_runtime.h>
+#include <iostream>
 #include "../thirdparty/nvidia/helper_cuda.h"
 #include "../thirdparty/nvidia/helper_math.h"
 
