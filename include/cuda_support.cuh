@@ -18,7 +18,9 @@
 #define CUDA_SUPPORT_CUH_
 
 __global__
-void g_ZeroizeMemoryFloat(float *array, size_t length);
+void g_ZeroizeMemory(float *array, size_t length);
+__global__
+void g_ZeroizeMemory(int *array, size_t length);
 
 
 #endif   /* ----- #ifndef CUDA_SUPPORT_CUH_  ----- */

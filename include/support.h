@@ -6,7 +6,7 @@
  *    Description:  This is the header file of support.h
  *
  *        Created:  Wed Jul 22 18:38:32 2015
- *       Modified:  Thu 24 Sep 2015 09:51:13 AM HKT
+ *       Modified:  Tue 29 Sep 2015 04:52:25 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -17,6 +17,7 @@
 #ifndef SUPPORT_H_
 #define SUPPORT_H_
 #include <string>
+#include <vector>
 
 class CommandQueue;
 
@@ -39,6 +40,7 @@ bool LoadParameters(CommandQueue *);
 bool LoadCommands(int argc, char **argv, CommandQueue *cmd);
 
 bool WriteOutputFile( const float *value_table,
+                      std::vector<int*>host_optimal_zq,
                       const size_t table_length,
                       const int output_format,
                       const char *output_filename);

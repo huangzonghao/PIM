@@ -6,7 +6,7 @@
  *    Description:  The cuda supporting functions related to the algorithm
  *
  *        Created:  Sat Aug  8 15:35:08 2015
- *       Modified:  Mon 07 Sep 2015 10:51:58 AM HKT
+ *       Modified:  Tue 29 Sep 2015 03:48:49 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -41,7 +41,7 @@
  * =============================================================================
  */
 __device__
-void d_DepleteStorage(int * mD_index, size_t deplete_amount, size_t m){
+void d_DepleteStorage(int *mD_index, size_t deplete_amount, size_t m){
     size_t buffer = 0;
     size_t i = 0;
     if (deplete_amount > 0) {
@@ -69,6 +69,25 @@ void d_DepleteStorage(int * mD_index, size_t deplete_amount, size_t m){
  */
 }       /* -----  end of device kernel d_DepleteStorage  ----- */
 
+
+/*
+ * ===  DEVICE KERNEL  =========================================================
+ *         Name:  d_AddStorage
+ *  Description:
+ *       @param:
+ *      @return:  none
+ * =============================================================================
+ */
+/* __device__ */
+/* void d_AddStorage(int *md_index, size_t add_amount, size_t m){ */
+    /* for(int i = 0; i <  m - 1; ++i){ */
+        /* md_index[i] = md_index[i + 1]; */
+    /* } */
+    /* md_index[m - 1] = add_amount; */
+    /* return; */
+/* }       [> -----  end of device kernel d_AddStorage  ----- <] */
+
+
 /*
  * ===  DEVICE KERNEL  =========================================================
  *         Name:  d_GetTomorrowIndex
@@ -80,9 +99,17 @@ void d_DepleteStorage(int * mD_index, size_t deplete_amount, size_t m){
  * =============================================================================
  */
 __device__
-size_t d_GetTomorrowIndex(int * mD_index, int today_deplete, size_t m){
-    d_DepleteStorage(mD_index, today_deplete, m);
-    return d_check_storage(mD_index, m);
+size_t d_GetTomorrowIndex( int *md_space,
+                           int today_deplete,
+                           int today_demand,
+                           int today_order,
+                           size_t m){
+    d_DepleteStorage(md_space, today_deplete, m);
+    /* d_AddStorage(mD_index, today_order, m); */
+    md_space[m] = today_order;
+    d_DepleteStorage(md_space, today_demand, m + 1);
+
+    return d_check_storage(md_space + 1, m);
 }       /* -----  end of device kernel d_GetTomorrowIndex  ----- */
 
 /*
@@ -94,33 +121,33 @@ size_t d_GetTomorrowIndex(int * mD_index, int today_deplete, size_t m){
  * =============================================================================
  */
 __device__
-float d_StateValue(float *table_for_reference,
-                   int *mD_index,
-                   size_t storage_today,
-                   int z,
-                   int q,
-                   int demand_distri_idx,
-                   struct DeviceParameters *d
-                   ){
+float d_StateValue( float *table_for_reference,
+                    size_t storage_today,
+                    int *my_md_ref,
+                    int *my_md_space,
+                    int z, int q,
+                    int demand_distri_idx,
+                    struct DeviceParameters *d ){
 
     float profit = 0;
     float sum    = 0;
-    int *mD_temp = new int[d->m];
+    /* int *mD_temp = new int[d->m]; */
     DemandDistribution demand = *(d->demand_distributions[demand_distri_idx]);
     for ( int i = demand.min_demand; i < demand.max_demand; ++i){
         for (int j = 0; j < d->m; ++j){
-            mD_temp[j] = mD_index[j];
+            my_md_space[j] = my_md_ref[j];
         }
         profit = d->s * z /* depletion income */
                - d->h * max(int(storage_today) - z , 0) /* holding cost */
                - d->alpha * d->c * q /* ordering cost */
                + d->alpha * d->r * min(i, int(storage_today) - z + q) /* sale income */
-               - d->alpha * d->theta * max(mD_index[0] - z - i, 0) /* disposal cost */
-               + d->alpha * table_for_reference[d_GetTomorrowIndex(mD_temp, z+i-q, d->m)]; /* value of tomorrow */
+               - d->alpha * d->theta * max(my_md_ref[0] - z - i, 0) /* disposal cost */
+               /* something wrong here */
+               + d->alpha * table_for_reference[d_GetTomorrowIndex(my_md_space, z, i, q, d->m)]; /* value of tomorrow */
 
         sum += profit * demand.table[i];
     }
-    delete mD_temp;
+    /* delete mD_temp; */
     return sum;
 }       /* -----  end of device kernel d_StateValue  ----- */
 /*
@@ -136,15 +163,22 @@ float d_StateValue(float *table_for_reference,
  * =============================================================================
  */
 __device__
+void d_justforfun(int c){
+    int a  = 1;
+    int b = a + 1;
+    a = b - a;
+    a = c;
+    return;
+}
+__device__
 void d_StateValueUpdate( float *table_to_update,
                          float *table_for_reference,
                          size_t dataIdx,
+                         int **md_spaces,
                          int *z_records,
                          int *q_records,
-                         int min_z,
-                         int max_z,
-                         int min_q,
-                         int max_q,
+                         int min_z, int max_z,
+                         int min_q, int max_q,
                          int demand_distri_idx,
                          struct DeviceParameters *d ){
 
@@ -152,22 +186,27 @@ void d_StateValueUpdate( float *table_to_update,
     // So we don't need to do it for every loop
     // Last dimension are used to store the ordering
     // which could be used for sale
-    int *mDarray = new int[d->m];
+    /* int *mDarray = new int[d->m]; */
+    /* int mDarray[2]; */
+
+    size_t my_offset = blockIdx.x * blockDim.x + threadIdx.x;
+    int *my_md_ref = md_spaces[0] + my_offset * d->m;
+    int *my_md_space = md_spaces[1] + my_offset * (d->m + 1);
 
     /* temp_z and temp_q are to store the best z and q, for future use */
     int   temp_z         = 0;
     int   temp_q         = 0;
     float max_value      = 0.0;
     float expected_value = 0.0;
-    size_t storage_today = d_decode(dataIdx, d->m, d->k, mDarray );
+    size_t storage_today = d_decode(dataIdx, d->m, d->k, my_md_ref);
 
     for (int i_z = min_z; i_z <= max_z; ++i_z) {
         for (int i_q = min_q; i_q <= max_q; ++i_q) {
             expected_value = d_StateValue(table_for_reference,
-                                          mDarray,
                                           storage_today,
-                                          i_z,
-                                          i_q,
+                                          my_md_ref,
+                                          my_md_space,
+                                          i_z, i_q,
                                           demand_distri_idx,
                                           d);
 
@@ -181,6 +220,9 @@ void d_StateValueUpdate( float *table_to_update,
     }
 
     // Store the optimal point and value
+    /* if(threadIdx.x < 100){ */
+        /* printf("max value : %f\n", max_value); */
+    /* } */
     table_to_update[dataIdx] = max_value;
 
     if(z_records != NULL)
@@ -188,7 +230,7 @@ void d_StateValueUpdate( float *table_to_update,
     if(q_records != NULL)
         q_records[dataIdx] = temp_q;
 
-    delete mDarray;
+    /* delete mDarray; */
 }    /* -----  end of device kernel d_StateValueUpdate  ----- */
 
 /* =============================================================================
@@ -221,7 +263,7 @@ void g_ModelInit(struct DeviceParameters d, float *value_table){
 
 /*
  * ===  FUNCTION  ==============================================================
- *         Name:  ModelInit
+ *         Name:  model_ValueTableInit
  *  Description:  to initialize the value table at the beginning of the program
  *                  for all policies, we just sell out all the items with the
  *                  salvage price
@@ -230,53 +272,110 @@ void g_ModelInit(struct DeviceParameters d, float *value_table){
  *      @return:  success or not
  * =============================================================================
  */
-bool ModelInit(CommandQueue *cmd, SystemInfo *sysinfo, float *value_table){
+bool model_ValueTableInit(CommandQueue *cmd, SystemInfo *sysinfo, float *value_table){
     g_ModelInit<<<sysinfo->get_value("num_cores"), sysinfo->get_value("core_size")>>>
                         (cmd->get_device_param_struct(), value_table);
     return true;
-}       /* -----  end of function ModelInit  ----- */
+}       /* -----  end of function model_ValueTableInit  ----- */
 
 /*
  * ===  FUNCTION  ==============================================================
- *         Name:  DeclareValueTable
+ *         Name:  model_DeclareValueTables
  *  Description:  declare the two value tables in the cuda device
  *       @param:  table length
- *      @return:  float**
+ *      @return:  float**, the pointer returned can be dereferenced on host
  * =============================================================================
  */
-float **DeclareValueTable(size_t table_length, SystemInfo* sysinfo){
+float **model_DeclareValueTables(size_t table_length, SystemInfo *sysinfo){
     /* first declare the host space for the two pointers holding the two tables */
     float **temp = new float*[2];
     /* then the device memory space */
     for (int i = 0; i < 2; ++i){
         checkCudaErrors(cudaMalloc(temp + i, table_length * sizeof(float)));
         /* then zeroize the table */
-        g_ZeroizeMemoryFloat
+        g_ZeroizeMemory
             <<<sysinfo->get_value("num_cores"), sysinfo->get_value("core_size")>>>
             (temp[i], table_length);
     }
     return temp;
-}       /* -----  end of function DeclareValueTable  ----- */
+}       /* -----  end of function model_DeclareValueTables  ----- */
+
 
 /*
  * ===  FUNCTION  ==============================================================
- *         Name:  CleanUpValueTable
+ *         Name:  model_DeclareMDSpaces
+ *  Description:  declare the m dimensional lists which will be used as the
+ *                  working spaces in kernel functions in cuda device
+ *                  the length of each list will depend on the cuda device
+ *       @param:  table length
+ *      @return:  int**, the pointer returned can be dereferenced on device
+ *                  note the length of the table for reference and the length of
+ *                  the temp working space are differnt. the pointer to the ref
+ *                  table will come first
+ * =============================================================================
+ */
+int **model_DeclareMDSpaces(CommandQueue *cmd, SystemInfo *sysinfo){
+    /* first allocate device spaces to hold the two pointers,
+     * this will be the returned value
+     */
+    int **d_pointers = NULL;
+    checkCudaErrors(cudaMalloc(&d_pointers, 2 * sizeof(int*)));
+
+    /* then some spaces on host for intermediate process */
+    int **h_pointers = new int*[2];
+
+    /* in order to make the two tables adjunct, we first declare one long table and
+     * then assign another pointer to the middle point
+     */
+    size_t ref_table_length = sysinfo->get_value("num_cores")
+                               * sysinfo->get_value("core_size")
+                               * cmd->get_h_param("m");
+
+    size_t space_table_length = sysinfo->get_value("num_cores")
+                               * sysinfo->get_value("core_size")
+                               * (cmd->get_h_param("m") + 1);
+
+    int *temp_pointer = NULL;
+    checkCudaErrors(cudaMalloc(&temp_pointer,
+                    (ref_table_length + space_table_length) * sizeof(int)));
+    h_pointers[0] = temp_pointer;
+
+    /* then zeroize the table */
+    g_ZeroizeMemory
+        <<<sysinfo->get_value("num_cores"), sysinfo->get_value("core_size")>>>
+        (h_pointers[0], ref_table_length + space_table_length );
+
+    h_pointers[1] = h_pointers[0] + ref_table_length;
+
+    checkCudaErrors(cudaMemcpy(d_pointers, h_pointers,
+                               2 * sizeof(int*),
+                               cudaMemcpyHostToDevice));
+
+    delete h_pointers;
+
+    return d_pointers;
+}       /* -----  end of function model_DeclareMDSpaces  ----- */
+/*
+ * ===  FUNCTION  ==============================================================
+ *         Name:  model_CleanUpTables
  *  Description:  clean up the memory space declared in DeclareValueTable
  *                  both host memory and the device memory
  *       @param:  float** and table length
  *      @return:  success or not
  * =============================================================================
  */
-bool CleanUpValueTable(float **value_tables, size_t table_length){
+bool model_CleanUpTables( float **value_tables,
+                          size_t num_value_tables,
+                          size_t table_length ){
     /* first the device memory space */
-    for (int i = 0; i < 2; ++i){
+    for (int i = 0; i < num_value_tables; ++i){
         checkCudaErrors(cudaFree(value_tables[i]));
     }
     /* then the host memory */
     delete value_tables;
     value_tables = NULL;
     return true;
-}       /* -----  end of function CleanUpValueTable  ----- */
+}       /* -----  end of function model_CleanUpTables  ----- */
 
 
 /* =============================================================================

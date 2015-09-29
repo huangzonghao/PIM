@@ -6,7 +6,7 @@
  *    Description:  The header file for all the models
  *
  *        Created:  Fri Aug  7 23:26:29 2015
- *       Modified:  Thu 24 Sep 2015 03:03:05 AM HKT
+ *       Modified:  Tue 29 Sep 2015 05:46:16 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -29,19 +29,23 @@ static const char *policy_options[] = {  "all",
                                          "fluid" };
 /* #endif */
 
-bool ModelFluid(CommandQueue *cmd,
-                SystemInfo *sysinfo,
-                float *table_to_update,
-                float *table_for_reference,
-                int distri_idx,
-                size_t depletion_indicator);
+bool ModelFluid( CommandQueue *cmd,
+                 SystemInfo *sysinfo,
+                 float *table_to_update,
+                 float *table_for_reference,
+                 int distri_idx,
+                 int period_idx,
+                 int **md_spaces,
+                 int *z, int *q );
 
-bool ModelDP(CommandQueue *cmd,
-             SystemInfo *sysinfo,
-             float *table_to_update,
-             float *table_for_reference,
-             int distri_idx,
-             int *z, int *q);
+bool ModelDP( CommandQueue *cmd,
+              SystemInfo *sysinfo,
+              float *table_to_update,
+              float *table_for_reference,
+              int distri_idx,
+              int period_idx,
+              int **md_spaces,
+              int *z, int *q);
 
 #endif   /* ----- #ifndef MODELS_H_  ----- */
 

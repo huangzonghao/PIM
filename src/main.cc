@@ -6,7 +6,7 @@
  *    Description:  This file contains the main workflow of the PIM project
  *
  *        Created:  Wed Jul 22 13:57:40 2015
- *       Modified:  Thu 24 Sep 2015 09:02:27 AM HKT
+ *       Modified:  Tue 29 Sep 2015 06:06:29 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -57,6 +57,8 @@ int main (int argc, const char **argv) {
     SystemInfo sysinfo;
     sysinfo.check_gpu();
 
+    sysinfo.set_core_size(512);
+
 /*-----------------------------------------------------------------------------
  *  load the system commands
  *-----------------------------------------------------------------------------*/
@@ -75,6 +77,7 @@ int main (int argc, const char **argv) {
 /*-----------------------------------------------------------------------------
  *  load the parameters
  *-----------------------------------------------------------------------------*/
+    std::cerr << "before reading the parameters" << std::endl;
     error_msg = LoadParameters(&cmd);
     if(!error_msg){
         printf("Error detected while loading the parameters, exit\n");
@@ -89,6 +92,7 @@ int main (int argc, const char **argv) {
     timeval  tv1, tv2;
     /* declare the host value table */
     std::vector<float*> host_value_tables;
+    std::vector<int*> host_optimal_zq;
     /* the container will be filled in the frame function
      *     and the size of the vector will be decided by the number of policies
      *     enabled
@@ -96,7 +100,7 @@ int main (int argc, const char **argv) {
 
     gettimeofday(&tv1, NULL);
 
-    error_msg = LetsRock(&cmd, &sysinfo, host_value_tables);
+    error_msg = LetsRock(&cmd, &sysinfo, host_value_tables, host_optimal_zq);
     if(!error_msg){
         printf("Something went wrong in LetsRock\n");
         return 3;
@@ -116,9 +120,11 @@ int main (int argc, const char **argv) {
      * 2. print the status of the task
      */
     printf("The total time elapsed : %f \n", program_running_time);
+
     error_msg = WriteOutputFile(host_value_tables[0],
+                                host_optimal_zq,
                                 cmd.get_d_param("table_length"),
-                                1,//output format
+                                2,//output format
                                 cmd.get_config("output_file_name"));
 
     printf("Success: the program finished successfully!\n");

@@ -8,7 +8,7 @@
  *                    or algorithm
  *
  *        Created:  Wed Jul 22 14:11:43 2015
- *       Modified:  Thu 24 Sep 2015 09:52:51 AM HKT
+ *       Modified:  Tue 29 Sep 2015 04:51:57 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -26,6 +26,7 @@
 #include <fstream>
 #include <string>
 #include <iostream>
+#include <vector>
 
 #include "../include/support-inl.h"
 #include "../include/command_queue.h"
@@ -221,13 +222,14 @@ bool LoadParameters ( CommandQueue *cmd ){
   * then generate the output file based on the indicated format and return status
   */
 bool WriteOutputFile ( const float *value_table,
+                       std::vector<int*>optimal_zq,
                        const size_t table_length,
                        const int output_format,
                        const char *output_file_name ){
 
     if ( DoesItExist(output_file_name) ) {
         std::string user_option;
-        printf("WARNING: %s already exists, overwritten? (y/n) : ",
+        printf("Warning: %s already exists, overwritten? (y/n) : ",
                output_file_name);
         std::cin >> user_option;
         if ( user_option == "y")
@@ -242,6 +244,12 @@ bool WriteOutputFile ( const float *value_table,
         case 1:
             for(size_t i = 0; i < table_length; ++i){
                 ofs << value_table[i] << std::endl;
+            }
+        case 2:
+            for(size_t i = 0; i < table_length; ++i){
+                ofs << value_table[i] << " "
+                    << optimal_zq[0][i] << " "
+                    << optimal_zq[1][i] << std::endl;
             }
     }
 

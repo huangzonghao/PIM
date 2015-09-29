@@ -47,3 +47,11 @@ are just for coding convenience
 
 Sat Sep  5 16:59:45 2015
 The recover mode shall be paralell with the model init part
+
+Thu Sep 24 19:36:38 2015
+The printf in cuda kernel has the output limitation. do not print too much from
+the kernel!!
+Tue 29 Sep 2015 04:47:27 PM HKT
+find a way to make the in programming options better and more professional,
+also get rid of anything related to the task in support.cc file, such as the
+var names in wirteoutputfile shall be more generalized

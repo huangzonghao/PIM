@@ -6,7 +6,7 @@
  *    Description:  The definition of the frame function for the PIM problem
  *
  *        Created:  Thu Jul 23 01:09:07 2015
- *       Modified:  Thu 24 Sep 2015 09:51:51 AM HKT
+ *       Modified:  Tue 29 Sep 2015 05:55:44 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -32,7 +32,6 @@
 #include "../include/model_support.h"
 #include "../include/cuda_support.h"
 #include "../include/device_parameters.h"
-#include "../include/demand_distribution.h"
 #include "../include/support.h"
 
 /*
@@ -46,27 +45,43 @@
  */
 bool LetsRock ( CommandQueue *cmd,
                 SystemInfo *sysinfo,
-                std::vector<float*> &host_value_tables ){
+                std::vector<float*> &host_value_tables,
+                std::vector<int*> &optimal_zq ){
     /* to deal with the errors while the computation */
     bool error_msg;
 
     /* declare the value tables, both host and device */
+    printf("allocating the value table \n");
     float **device_value_tables =
-        DeclareValueTable((int)cmd->get_d_param("table_length"), sysinfo);
-    float *host_value_table_temp;
+        model_DeclareValueTables((size_t)cmd->get_d_param("table_length"), sysinfo);
+    float *host_value_table_temp = NULL;
+
+    int *host_q_records_temp = NULL;
+    int *host_z_records_temp = NULL;
+
+    int *device_z_records =
+        cuda_AllocateMemoryInt((size_t)cmd->get_d_param("table_length"));
+    int *device_q_records =
+        cuda_AllocateMemoryInt((size_t)cmd->get_d_param("table_length"));
+
+    /* since the in-kernel dynamic allocation is barely can be useful, we allocate
+     * some global memory to do the work
+     */
+    /* the first list is for reference and the second one is the working space */
+    int **device_md_spaces = model_DeclareMDSpaces(cmd, sysinfo);
 
 
     /* check if there are some tasks to recover */
 
-    int set_period = cmd->get_h_param("T");
-    if(cmd->check_command("recovery")){
-        float *r_table_to_update = new float[(int)cmd->get_d_param("table_length")];
-        float *r_table_for_reference = new float[(int)cmd->get_d_param("table_length")];
-        LoadProgress( cmd,
-                      set_period,
-                      r_table_to_update,
-                      r_table_for_reference);
-    }
+    int num_periods_to_run = cmd->get_h_param("T");
+    /* if(cmd->check_command("recovery")){ */
+        /* float *r_table_to_update = new float[(int)cmd->get_d_param("table_length")]; */
+        /* float *r_table_for_reference = new float[(int)cmd->get_d_param("table_length")]; */
+        /* LoadProgress( cmd, */
+                      /* set_period, */
+                      /* r_table_to_update, */
+                      /* r_table_for_reference); */
+    /* } */
 /*-----------------------------------------------------------------------------
  *  the fluid policy
  *-----------------------------------------------------------------------------*/
@@ -75,52 +90,45 @@ bool LetsRock ( CommandQueue *cmd,
         if(cmd->check_command("recovery")){
 
         }
-        ModelInit(cmd, sysinfo, device_value_tables[0]);
+        model_ValueTableInit(cmd, sysinfo, device_value_tables[0]);
         /* current table is the table to update */
         int current_table_idx = 1;
         int distri_idx = 0;
-        for ( int i_period = set_period; i_period > 0; --i_period ){
-            if(i_period != 1){
-                error_msg = ModelFluid(cmd, sysinfo,
-                                       device_value_tables[current_table_idx],
-                                       device_value_tables[1 - current_table_idx],
-                                       distri_idx,
-                                       0);
-                current_table_idx = 1 - current_table_idx;
-                if(!error_msg){
-                    printf("Error: Something went wrong in ModelFluid, "
-                            "period %d. Exit.\n", i_period);
-                    return false;
-                }
-            }
-            else{
-                // first calculate the expect demand for each day
-                DemandDistribution *demand = cmd->get_h_demand_pointer(distri_idx);
-                float expect_demand = 0;
-                for(int i = 0; i < (int)(demand->max_demand - demand->min_demand); ++i){
-                    expect_demand += (i + demand->min_demand) * demand->table[i];
-                }
-                error_msg = ModelFluid(cmd, sysinfo,
-                                       device_value_tables[current_table_idx],
-                                       device_value_tables[1 - current_table_idx],
-                                       distri_idx,
-                                       (size_t)ceil(expect_demand));
-                if(!error_msg){
-                    printf("Error: Something went wrong in ModelFluid, "
-                            "period %d. Exit.\n", i_period);
-                    return false;
-                }
+        for ( int i_period = num_periods_to_run; i_period > 0; --i_period ){
+            error_msg = ModelFluid( cmd, sysinfo,
+                                    device_value_tables[current_table_idx],
+                                    device_value_tables[1 - current_table_idx],
+                                    distri_idx,
+                                    i_period,
+                                    device_md_spaces,
+                                    device_z_records,
+                                    device_q_records );
+
+            current_table_idx = 1 - current_table_idx;
+            if(!error_msg){
+                printf("Error: Something went wrong in ModelFluid, "
+                        "period %d. Exit.\n", i_period);
+                return false;
             }
         }
         host_value_table_temp = new float[(int)cmd->get_d_param("table_length")];
         cuda_ReadFromDevice(host_value_table_temp,
                             device_value_tables[1 - current_table_idx],
                             (size_t)cmd->get_d_param("table_length"));
-        /* for (int i = 0; i < (int)cmd->get_d_param("table_length"); ++i){ */
-            /* printf("%f, ",host_value_table_temp[i]); */
-        /* } */
-        /* printf("\n"); */
+
         host_value_tables.push_back(host_value_table_temp);
+
+        host_z_records_temp = new int[(int)cmd->get_d_param("table_length")];
+        cuda_ReadFromDevice(host_z_records_temp,
+                            device_z_records,
+                            (size_t)cmd->get_d_param("table_length"));
+        host_q_records_temp = new int[(int)cmd->get_d_param("table_length")];
+        cuda_ReadFromDevice(host_q_records_temp,
+                            device_q_records,
+                            (size_t)cmd->get_d_param("table_length"));
+
+        optimal_zq.push_back(host_z_records_temp);
+        optimal_zq.push_back(host_q_records_temp);
 
         printf("Model fluid has finished successfully\n");
     }
@@ -128,26 +136,24 @@ bool LetsRock ( CommandQueue *cmd,
 /*-----------------------------------------------------------------------------
  *  the dp policy
  *-----------------------------------------------------------------------------*/
-    if( strcmp(cmd->get_config("policy"), "DP") == 0 ||
+    if( strcmp(cmd->get_config("policy"), "tree") == 0 ||
         strcmp(cmd->get_config("policy"),  "all") == 0 ){
-        /* for dp policy we need two tabels to store the z, q information on the
-         *     device
-         */
-        int *d_z_records =
-            cuda_AllocateMemoryInt((size_t)cmd->get_d_param("table_length"));
-        int *d_q_records =
-            cuda_AllocateMemoryInt((size_t)cmd->get_d_param("table_length"));
+
 
         int current_table_idx = 1;
         int distri_idx = 0;
-        ModelInit(cmd, sysinfo, device_value_tables[0]);
-        for ( int i_period = set_period; i_period > 0; --i_period ){
+        model_ValueTableInit(cmd, sysinfo, device_value_tables[0]);
+
+        for ( int i_period = num_periods_to_run; i_period > 0; --i_period ){
             error_msg = ModelDP( cmd,
                                  sysinfo,
                                  device_value_tables[current_table_idx],
                                  device_value_tables[1 - current_table_idx],
                                  distri_idx,
-                                 d_z_records, d_q_records);
+                                 i_period,
+                                 device_md_spaces,
+                                 device_z_records, device_q_records);
+
             current_table_idx = 1 - current_table_idx;
             if(!error_msg){
                 printf("Error: Something went wrong in ModelDP, "
@@ -161,8 +167,23 @@ bool LetsRock ( CommandQueue *cmd,
                             (size_t)cmd->get_d_param("table_length"));
         host_value_tables.push_back(host_value_table_temp);
 
+        host_z_records_temp = new int[(int)cmd->get_d_param("table_length")];
+        cuda_ReadFromDevice(host_z_records_temp,
+                            device_z_records,
+                            (size_t)cmd->get_d_param("table_length"));
+        host_q_records_temp = new int[(int)cmd->get_d_param("table_length")];
+        cuda_ReadFromDevice(host_q_records_temp,
+                            device_q_records,
+                            (size_t)cmd->get_d_param("table_length"));
+
+        optimal_zq.push_back(host_z_records_temp);
+        optimal_zq.push_back(host_q_records_temp);
+
         printf("Model DP has finished successfully\n");
     }
+
+    /* we need to clean up the value tables we declared here before return */
+
     return true;
 }       /* -----  end of function LetsRock  ----- */
 

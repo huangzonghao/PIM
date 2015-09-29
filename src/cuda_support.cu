@@ -9,7 +9,7 @@
  *                    Mostly the interface for other cpp source file
  *
  *        Created:  Thu Jul 23 03:38:40 2015
- *       Modified:  Thu 17 Sep 2015 12:56:06 PM HKT
+ *       Modified:  Tue 29 Sep 2015 04:38:50 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -43,13 +43,25 @@
 
 /*
  * ===  GLOBAL KERNEL  =========================================================
- *         Name:  g_ZeroizeMemoryFloat
+ *         Name:  g_ZeroizeMemory
  *  Description:  zeroize the float array
  *       @param:  pointer to the array, length
  * =============================================================================
  */
 __global__
-void g_ZeroizeMemoryFloat(float *array, size_t length){
+void g_ZeroizeMemory(float *array, size_t length){
+    size_t step_size = gridDim.x * blockDim.x;
+    size_t myStartIdx = blockDim.x * blockIdx.x + threadIdx.x;
+    for (size_t i = myStartIdx; i < length; i += step_size)
+        array[i] = 0;
+
+    __syncthreads();
+    return;
+}       /* -----  end of global kernel g_ZeroizeMemoryFloat  ----- */
+
+
+__global__
+void g_ZeroizeMemory(int *array, size_t length){
     size_t step_size = gridDim.x * blockDim.x;
     size_t myStartIdx = blockDim.x * blockIdx.x + threadIdx.x;
     for (size_t i = myStartIdx; i < length; i += step_size)
@@ -157,6 +169,17 @@ void cuda_ReadFromDevice ( size_t *h_array,
     return ;
 }       /* -----  end of function cuda_ReadFromDevice  ----- */
 
+void cuda_ReadFromDevice ( int *h_array,
+                           int * d_array,
+                           size_t length ){
+
+    checkCudaErrors(cudaMemcpy(h_array, d_array,
+                               length * sizeof(int),
+                               cudaMemcpyDeviceToHost));
+
+    return ;
+}       /* -----  end of function cuda_ReadFromDevice  ----- */
+
 /*
  * ===  FUNCTION  ==============================================================
  *         Name:  cuda_AllocateMemory
@@ -252,6 +275,11 @@ void cuda_FreeMemory(struct DemandDistribution **ptr){
  * =============================================================================
  */
 bool cuda_CheckGPU(int *num_devices, int *num_cores, int *core_size){
+
+    /* int *get_device; */
+    /* cudaGetDevice(get_device); */
+    /* printf("the current device is %d\n", *get_device); */
+
     cudaGetDeviceCount(num_devices);
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, 0);

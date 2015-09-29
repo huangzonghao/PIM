@@ -23,24 +23,22 @@ __device__
 size_t d_GetTomorrowIndex(int *mD_index, int today_deplete, size_t m);
 
 __device__
-float d_StateValue(float *last_table,
-                   int *mD_index,
-                   size_t storage_today,
-                   int z,
-                   int q,
-                   int demand_table_idx,
-                   struct DeviceParameters *d);
+float d_StateValue( float *last_table,
+                    size_t storage_today,
+                    int *mD_index,
+                    int z, int q,
+                    int demand_table_idx,
+                    struct DeviceParameters *d );
 
 __device__
 void d_StateValueUpdate( float *table_to_update,
                          float *table_for_reference,
                          size_t dataIdx,
+                         int **md_spaces,
                          int *z_records,
                          int *q_records,
-                         int min_z,
-                         int max_z,
-                         int min_q,
-                         int max_q,
+                         int min_z, int max_z,
+                         int min_q, int max_q,
                          int demand_distri_idx,
                          struct DeviceParameters *d );
 

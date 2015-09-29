@@ -6,7 +6,7 @@
  *    Description:  This file contains the implementation of CommandQueue
  *
  *        Created:  Fri Jul 24 13:52:37 2015
- *       Modified:  Thu 24 Sep 2015 03:00:39 AM HKT
+ *       Modified:  Thu Sep 24 20:38:07 2015
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -298,7 +298,6 @@ bool CommandQueue::load_host_params ( const char *var, float value ) {
  */
 bool CommandQueue::load_files (const char *type) {
     if(strcmp(type, "param") == 0){
-        printf("start to load the params\n");
         FILE *fp = std::fopen(get_config("input_file_name"), "r");
         char readBuffer[65536];
         rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));

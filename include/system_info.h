@@ -6,7 +6,7 @@
  *    Description:  This file contains the denifination of SystemInfo
  *
  *        Created:  Fri Jul 24 01:11:47 2015
- *       Modified:  Thu 10 Sep 2015 02:34:57 PM HKT
+ *       Modified:  Fri 25 Sep 2015 04:15:08 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -48,6 +48,12 @@ class SystemInfo
     /* =========================   OPERATORS   =============================== */
     void print_sys_info();
     void check_gpu(); // if no gpu is there, exit from inside
+
+    /* ugly but i have no other ideas... */
+    void set_core_size(int core_size){
+        cuda_core_size_ = core_size;
+        return;
+    }
 
   protected:
     /* ========================  DATA MEMBERS  =============================== */

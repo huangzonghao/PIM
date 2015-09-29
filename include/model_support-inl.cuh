@@ -28,6 +28,7 @@ size_t d_decode (size_t oneDIdx, size_t m, size_t k, int *mDIdx){
     for( size_t i = 0; i < m ; ++i){
         temp = oneDIdx % k;
         mDIdx[m - 1 - i] = temp;
+        /* *(mDIdx + m - 1 - i) = temp; */
         sum += temp;
         oneDIdx /= k;
     }

@@ -9,7 +9,7 @@
  *                    cuda_support-ker.h
  *
  *        Created:  Thu Jul 23 03:40:09 2015
- *       Modified:  Thu 10 Sep 2015 11:45:02 AM HKT
+ *       Modified:  Tue 29 Sep 2015 04:39:28 PM HKT
  *
  *         Author:  Huang Zonghao
  *          Email:  coding@huangzonghao.com
@@ -56,6 +56,10 @@ void cuda_ReadFromDevice ( float *h_array,
 
 void cuda_ReadFromDevice ( size_t *h_array,
                            size_t *d_array,
+                           size_t length );
+
+void cuda_ReadFromDevice ( int *h_array,
+                           int *d_array,
                            size_t length );
 
 /*-----------------------------------------------------------------------------
